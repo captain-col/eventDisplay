@@ -6,6 +6,8 @@
 
 namespace CP {
     class TEventChangeManager;
+    class TVEventChangeHandler;
+
 };
 
 /// A class to handle a new event becoming available to the event display.
@@ -16,22 +18,31 @@ public:
     TEventChangeManager();
     virtual ~TEventChangeManager();
 
-    /// Set or get the event source.
-    /// @{
-    void SetEventSource(TVInputFile* source) {fEventSource = source;}
+    /// Set or get the event source.  When the event source is set, the first
+    /// event is read.  @{
+    void SetEventSource(TVInputFile* source);
     TVInputFile* GetEventSource() {return fEventSource;}
     /// @}
 
     /// Trigger an event change.  This is connected to the GUI buttons.
     void ChangeEvent(int change=1);
 
-    /// This updates the event display for a new event.
+    /// This updates the event display for a new event using the event change
+    /// handlers.
     void EventChanged();
+
+    /// Add an event change handler (taking ownership of the handler).
+    void AddHandler(CP::TVEventChangeHandler* handler);
     
 private:
 
     /// The input source of events.
     TVInputFile* fEventSource;
+
+    typedef std::vector<CP::TVEventChangeHandler*> Handlers;
+
+    /// The event change handlers.
+    Handlers fHandlers;
 
     ClassDef(TEventChangeManager,0);
 };

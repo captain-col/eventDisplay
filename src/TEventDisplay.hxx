@@ -24,6 +24,12 @@ public:
     /// Return a pointer to the event change manager.
     CP::TEventChangeManager& EventChange() {return *fEventChangeManager;}
 
+    /// Get a color from the palette using a linear value scale.
+    int LinearColor(double val, double minVal, double maxVal);
+
+    /// Get a color from the palette using a logarithmic value scale.
+    int LogColor(double val, double minVal, double maxVal);
+
 private:
     // Prevent direct construction.
     TEventDisplay();

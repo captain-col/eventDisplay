@@ -25,6 +25,9 @@ public:
     /// Get the next event button widget.
     TGButton* GetNextEventButton() {return fNextEventButton;}
 
+    /// Get the redraw current event button widget.
+    TGButton* GetDrawEventButton() {return fDrawEventButton;}
+
     /// Get the previous event button widget.
     TGButton* GetPrevEventButton() {return fPrevEventButton;}
 
@@ -37,6 +40,7 @@ public:
 private:
     
     TGButton* fNextEventButton;
+    TGButton* fDrawEventButton;
     TGButton* fPrevEventButton;
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;

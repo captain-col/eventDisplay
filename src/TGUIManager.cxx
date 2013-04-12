@@ -39,6 +39,14 @@ CP::TGUIManager::TGUIManager() {
     hf->AddFrame(textButton, layoutHints);
     fPrevEventButton = textButton;
 
+    textButton = new TGTextButton(hf, "Redraw Event");
+    textButton->SetToolTipText("Refresh the current view.");
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    fDrawEventButton = textButton;
+
     textButton = new TGTextButton(hf, "Next Event");
     textButton->SetToolTipText("Go to previous event.");
     textButton->SetTextJustify(36);
