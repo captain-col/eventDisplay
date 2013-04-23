@@ -39,3 +39,7 @@ macro_append eventDisplay_dependencies " linkdef "
 # The main application
 application event-display ../app/eventDisplay.cxx
 macro_append event-display_dependencies " eventDisplay " 
+
+# Display the digits.
+application digit-display ../app/digitDisplay.cxx
+macro_append digit-display_dependencies " eventDisplay " 
