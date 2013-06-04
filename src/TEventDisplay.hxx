@@ -18,10 +18,10 @@ public:
     /// Deconstruct the event display.
     virtual ~TEventDisplay();
 
-    /// Return a pointer to the gui manager.
+    /// Return a reference to the gui manager.
     CP::TGUIManager& GUI() {return *fGUIManager;}
 
-    /// Return a pointer to the event change manager.
+    /// Return a reference to the event change manager.
     CP::TEventChangeManager& EventChange() {return *fEventChangeManager;}
 
     /// Get a color from the palette using a linear value scale.
