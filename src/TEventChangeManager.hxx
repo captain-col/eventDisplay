@@ -24,24 +24,33 @@ public:
     TVInputFile* GetEventSource() {return fEventSource;}
     /// @}
 
-    /// Trigger an event change.  This is connected to the GUI buttons.
+    /// Trigger an event change.  The argument says how many events to read.
+    /// If it's positive, then it reads forward in the file.  If the change is
+    /// zero, then the current event is just redrawn.  This is connected to
+    /// the GUI buttons.
     void ChangeEvent(int change=1);
 
-    /// This updates the event display for a new event using the event change
-    /// handlers.
-    void EventChanged();
-
-    /// Add an event change handler (taking ownership of the handler).
+    /// Add a handler (taking ownership of the handler) for when the event
+    /// needs to be redrawn.
     void AddHandler(CP::TVEventChangeHandler* handler);
     
 private:
+
+    /// This updates the event display for a new event using the event change
+    /// handlers.  This does not call UpdateEvent().  It is used to do
+    /// once-per-event initializations.
+    void NewEvent();
+
+    /// This updates the event display for an event using the event change
+    /// handlers.
+    void UpdateEvent();
 
     /// The input source of events.
     TVInputFile* fEventSource;
 
     typedef std::vector<CP::TVEventChangeHandler*> Handlers;
 
-    /// The event change handlers.
+    /// The event update handlers.
     Handlers fHandlers;
 
     ClassDef(TEventChangeManager,0);
