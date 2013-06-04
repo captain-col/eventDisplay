@@ -3,6 +3,9 @@
 
 #include <TGFrame.h>
 #include <TGButton.h>
+#include <TGListBox.h>
+#include <TGLabel.h>
+#include <TGTextEntry.h>
 
 #include <TEveManager.h>
 #include <TEveBrowser.h>
@@ -10,6 +13,11 @@
 #include <TSystem.h>
 
 CP::TGUIManager::TGUIManager() {
+    MakeControlTab();
+    MakeResultsTab();
+}
+
+void CP::TGUIManager::MakeControlTab() {
     TEveBrowser* browser = gEve->GetBrowser();
 
     // Define the generic layout.  The last four parameters are the padding
@@ -18,13 +26,10 @@ CP::TGUIManager::TGUIManager() {
         = new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandX,
                             2, 2, 2, 2);
 
-
-    // Imbed the new frame in the event browser
+    // Embed a new frame in the event browser to have control buttons.
     browser->StartEmbedding(TRootBrowser::kLeft);
-    
-    // This is embedded.
     TGMainFrame* mainFrame = new TGMainFrame(gClient->GetRoot(), 1000, 600);
-    mainFrame->SetWindowName("XX GUI");
+    mainFrame->SetWindowName("Event Control");
     mainFrame->SetCleanup(kDeepCleanup);
 
     TGVerticalFrame* hf = new TGVerticalFrame(mainFrame);
@@ -82,7 +87,54 @@ CP::TGUIManager::TGUIManager() {
     mainFrame->Resize();
     mainFrame->MapWindow();
     browser->StopEmbedding();
-    browser->SetTabTitle("Event Control", 0);
+    browser->SetTabTitle("Control", 0);
+}
+
+void CP::TGUIManager::MakeResultsTab() {
+    TEveBrowser* browser = gEve->GetBrowser();
+
+    // Embed a new frame in the event browser to select fit objects.
+    browser->StartEmbedding(TRootBrowser::kLeft);
+    TGMainFrame* mainFrame = new TGMainFrame(gClient->GetRoot(), 1000, 600);
+    mainFrame->SetWindowName("Fit Selection");
+    mainFrame->SetCleanup(kDeepCleanup);
+
+    TGVerticalFrame* hf = new TGVerticalFrame(mainFrame);
+
+    // Create the listbox for the results.
+    fResultsList = new TGListBox(hf);
+    fResultsList->SetMultipleSelections(true);
+    TGLayoutHints* layoutList = new TGLayoutHints(kLHintsLeft
+                                                  | kLHintsTop
+                                                  | kLHintsExpandX 
+                                                  | kLHintsExpandY);
+    hf->AddFrame(fResultsList,layoutList);
+
+    // Create a text entry button to choose a default result.
+    TGLabel* txt = new TGLabel(hf,"Default Result");
+    TGLayoutHints* layoutHints = new TGLayoutHints(kLHintsLeft
+                                                   | kLHintsTop
+                                                   | kLHintsExpandX,
+                                                   2,2,2,2);
+    hf->AddFrame(txt,layoutHints);
+
+    // Create a text entry button to choose a default result.
+    fDefaultResult = new TGTextEntry(hf);
+    hf->AddFrame(fDefaultResult,layoutHints);
+
+    // Do the final layout and mapping.
+    TGLayoutHints* layoutFrame 
+        = new TGLayoutHints(kLHintsLeft 
+                            | kLHintsTop 
+                            | kLHintsExpandX
+                            | kLHintsExpandY,
+                            2, 2, 2, 2);
+    mainFrame->AddFrame(hf, layoutFrame);
+    mainFrame->MapSubwindows();
+    mainFrame->Resize();
+    mainFrame->MapWindow();
+    browser->StopEmbedding();
+    browser->SetTabTitle("Recon", 0);
 }
 
 CP::TGUIManager::~TGUIManager() { }
