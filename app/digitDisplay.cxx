@@ -125,9 +125,9 @@ public:
                 wire = mc.GetNumber()+0.5;
                 if (mc.GetSequence() != 0) continue;
             }
-            for (int i = 0; i < pulse->GetNumberOfSamples(); ++i) {
+            for (std::size_t i = 0; i < pulse->GetSampleCount(); ++i) {
                 int tbin = pulse->GetFirstSample() + i;
-                xPlane->Fill(wire,tbin+0.5,pulse->GetADC(i)-2000.0);
+                xPlane->Fill(wire,tbin+0.5,pulse->GetSample(i)-2000.0);
             }
         }
         xPlane->Draw(drawOption.c_str());
@@ -166,9 +166,9 @@ public:
                 wire = mc.GetNumber()+0.5;
                 if (mc.GetSequence() != 1) continue;
             }
-            for (int i = 0; i < pulse->GetNumberOfSamples(); ++i) {
+            for (std::size_t i = 0; i < pulse->GetSampleCount(); ++i) {
                 int tbin = pulse->GetFirstSample() + i;
-                uPlane->Fill(wire,tbin+0.5,pulse->GetADC(i)-2000.0);
+                uPlane->Fill(wire,tbin+0.5,pulse->GetSample(i)-2000.0);
             }
         }
         uPlane->Draw(drawOption.c_str());
@@ -207,9 +207,9 @@ public:
                 wire = mc.GetNumber()+0.5;
                 if (mc.GetSequence() != 2) continue;
             }
-            for (int i = 0; i < pulse->GetNumberOfSamples(); ++i) {
+            for (std::size_t i = 0; i < pulse->GetSampleCount(); ++i) {
                 int tbin = pulse->GetFirstSample() + i;
-                vPlane->Fill(wire,tbin+0.5,pulse->GetADC(i)-2000.0);
+                vPlane->Fill(wire,tbin+0.5,pulse->GetSample(i)-2000.0);
             }
         }
         vPlane->Draw(drawOption.c_str());
