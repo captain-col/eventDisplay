@@ -13,13 +13,14 @@
 
 #include <cmath>
 #include <algorithm>
+
 CP::TPlotDigitsHits::TPlotDigitsHits()
     : fXPlaneHist(NULL), fVPlaneHist(NULL), fUPlaneHist(NULL) {
     Double_t r[]    = {0.0, 1., 0.};
     Double_t g[]    = {0.2, 1., 0.};
     Double_t b[]    = {0.4, 1., 0.};
     Double_t stop[] = {0., 0.5, 1.};
-    TColor::CreateGradientColorTable(3, stop, r, g, b, 101);
+    TColor::CreateGradientColorTable(3, stop, r, g, b, 100);
 }
 
 CP::TPlotDigitsHits::~TPlotDigitsHits() {}
@@ -128,6 +129,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
 
     digitPlot->SetMinimum(-maxVal);
     digitPlot->SetMaximum(maxVal+1);
+    digitPlot->SetContour(100);
     digitPlot->SetStats(false);
     digitPlot->Draw("colz");
     
