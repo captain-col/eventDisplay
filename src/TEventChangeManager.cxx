@@ -108,12 +108,18 @@ void CP::TEventChangeManager::SetEventSource(CP::TVInputFile* source) {
     }
     fEventSource = source;
     fEventSource->FirstEvent();
+    NewEvent();
     UpdateEvent();
 }
 
-void CP::TEventChangeManager::AddHandler(
+void CP::TEventChangeManager::AddNewEventHandler(
     CP::TVEventChangeHandler* handler) {
-    fHandlers.push_back(handler);
+    fNewEventHandlers.push_back(handler);
+}
+
+void CP::TEventChangeManager::AddUpdateHandler(
+    CP::TVEventChangeHandler* handler) {
+    fUpdateHandlers.push_back(handler);
 }
 
 void CP::TEventChangeManager::ChangeEvent(int change) {
@@ -150,7 +156,6 @@ void CP::TEventChangeManager::ChangeEvent(int change) {
 
 void CP::TEventChangeManager::NewEvent() {
     CaptError("New Event");
-    return;
 
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
     if (!event) {
@@ -160,12 +165,16 @@ void CP::TEventChangeManager::NewEvent() {
 
     CaptLog("Event: " << event->GetContext());
 
+    // Run through all of the handlers.
+    for (Handlers::iterator h = fNewEventHandlers.begin();
+         h != fNewEventHandlers.end(); ++h) {
+        (*h)->Apply();
+    }
+
 }
 
 void CP::TEventChangeManager::UpdateEvent() {
-    CaptError("Update Event");
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
-    CaptError("Got current event");
 
     if (!event) {
         CaptError("Invalid event");
@@ -174,16 +183,13 @@ void CP::TEventChangeManager::UpdateEvent() {
 
     // Make sure that the event geometry is updated.
     CP::TManager::Get().Geometry();
-    CaptError("Got current geometry");
     
     // Run through all of the handlers.
-    for (Handlers::iterator h = fHandlers.begin();
-         h != fHandlers.end(); ++h) {
-        CaptError("Apply Handler");
+    for (Handlers::iterator h = fUpdateHandlers.begin();
+         h != fUpdateHandlers.end(); ++h) {
         (*h)->Apply();
     }
 
     // Make sure EVE is up to date.
     gEve->Redraw3D(kTRUE);
-
 }

@@ -31,14 +31,20 @@ public:
     void ChangeEvent(int change=1);
 
     /// Add a handler (taking ownership of the handler) for when the event
-    /// needs to be redrawn.
-    void AddHandler(CP::TVEventChangeHandler* handler);
+    /// changes (e.g. a new event is read).  These handlers are for
+    /// "once-per-event" actions and are executed by the NewEvent() method.
+    void AddNewEventHandler(CP::TVEventChangeHandler* handler);
+    
+    /// Add a handler (taking ownership of the handler) for when the event
+    /// needs to be redrawn.  These handlers are executed by the UpdateEvent()
+    /// method.
+    void AddUpdateHandler(CP::TVEventChangeHandler* handler);
     
 private:
 
     /// This updates the event display for a new event using the event change
-    /// handlers.  This does not call UpdateEvent().  It is used to do
-    /// once-per-event initializations.
+    /// handlers.  It is used to do once-per-event initializations and does
+    /// not call UpdateEvent().
     void NewEvent();
 
     /// This updates the event display for an event using the event change
@@ -51,7 +57,10 @@ private:
     typedef std::vector<CP::TVEventChangeHandler*> Handlers;
 
     /// The event update handlers.
-    Handlers fHandlers;
+    Handlers fUpdateHandlers;
+
+    /// The new event handlers.
+    Handlers fNewEventHandlers;
 
     ClassDef(TEventChangeManager,0);
 };

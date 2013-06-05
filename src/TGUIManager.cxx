@@ -13,8 +13,8 @@
 #include <TSystem.h>
 
 CP::TGUIManager::TGUIManager() {
-    MakeControlTab();
     MakeResultsTab();
+    MakeControlTab();
 }
 
 void CP::TGUIManager::MakeControlTab() {
@@ -79,7 +79,58 @@ void CP::TGUIManager::MakeControlTab() {
     checkButton->SetMargins(0,0,0,0);
     checkButton->SetWrapLength(-1);
     hf->AddFrame(checkButton, layoutHints);
+    checkButton->SetOn();
     fShowG4HitsButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show 3D Hits");
+    checkButton->SetToolTipText(
+        "Show the reconstructed 3D hits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    checkButton->SetOn();
+    fShowHitsButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show Recon Objects");
+    checkButton->SetToolTipText(
+        "Show the reconstructed objects.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowFitsButton = checkButton;
+
+    /////////////////////
+    // Buttons to draw the digits.
+    /////////////////////
+    textButton = new TGTextButton(hf, "Draw X Digits");
+    fDrawXDigitsButton = textButton;
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    textButton->SetToolTipText("Draw the X digits vs wire number."
+                               "  Also show the X hits.");
+
+    textButton = new TGTextButton(hf, "Draw V Digits");
+    fDrawVDigitsButton = textButton;
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    textButton->SetToolTipText("Draw the V digits vs wire number."
+                               "  Also show the V hits.");
+
+    textButton = new TGTextButton(hf, "Draw U Digits");
+    fDrawUDigitsButton = textButton;
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    textButton->SetToolTipText("Draw the U digits vs wire number."
+                               "  Also show the U hits.");
+
 
     // Do the final layout and mapping.
     mainFrame->AddFrame(hf, layoutHints);

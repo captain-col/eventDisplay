@@ -19,11 +19,19 @@ namespace CP {
 ///
 /// \note This does not connect any actions to the buttons.  It only
 /// constructs the GUI and then allows access to the GUI widget.
+///
+/// \note The default state of widgets (e.g. the button widgets) is set when
+/// the widget is created.  This is how the default drawing attributes can be
+/// set.
 class CP::TGUIManager {
 public:
     /// Actually construct all the GUI.
     TGUIManager();
     ~TGUIManager();
+
+    //////////////////////
+    // CONTROL TAB WIDGETS
+    //////////////////////
 
     /// Get the next event button widget.
     TGButton* GetNextEventButton() {return fNextEventButton;}
@@ -37,7 +45,7 @@ public:
     /// Get the check button selecting if reconstruction objects are shown.
     TGButton* GetShowFitsButton() {return fShowFitsButton;}
 
-    /// Get the check button selecting if reconstruction objects are shown.
+    /// Get the check button selecting if reconstruction hits are shown.
     TGButton* GetShowHitsButton() {return fShowHitsButton;}
 
     /// Get the check button selecting if trajectories should be shown.
@@ -45,6 +53,19 @@ public:
 
     /// Get the check button selecting if G4 hits should be shown.
     TGButton* GetShowG4HitsButton() {return fShowG4HitsButton;}
+
+    /// Get the button to draw the X plane digits.
+    TGButton* GetDrawXDigitsButton() {return fDrawXDigitsButton;}
+
+    /// Get the button to draw the V plane digits.
+    TGButton* GetDrawVDigitsButton() {return fDrawVDigitsButton;}
+
+    /// Get the button to draw the U plane digits.
+    TGButton* GetDrawUDigitsButton() {return fDrawUDigitsButton;}
+
+    //////////////////////
+    // RESULTS TAB WIDGETS
+    //////////////////////
 
     /// Get the list box with the select results to show.
     TGListBox* GetResultsList() {return fResultsList;}
@@ -57,10 +78,9 @@ private:
     /// Make a tab in the browser for control buttons.
     void MakeControlTab();
 
-    /// Make a tab in the browser to select algorithms shown.
-    void MakeResultsTab();
-    
+    ////////////////////////////////////////
     // Widgets in the control tab.
+    ////////////////////////////////////////
     TGButton* fNextEventButton;
     TGButton* fDrawEventButton;
     TGButton* fPrevEventButton;
@@ -68,8 +88,16 @@ private:
     TGButton* fShowHitsButton;
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
-
+    TGButton* fDrawUDigitsButton;
+    TGButton* fDrawVDigitsButton;
+    TGButton* fDrawXDigitsButton;
+    
+    /// Make a tab in the browser to select algorithms shown.
+    void MakeResultsTab();
+    
+    ////////////////////////////////////////
     // Widgets in the results tab.
+    ////////////////////////////////////////
 
     /// A widget containing a list of possible TAlgorithmResult object names
     /// to be displayed (when selected).

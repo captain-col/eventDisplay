@@ -1,6 +1,8 @@
 #include "TEventDisplay.hxx"
 #include "TGUIManager.hxx"
+#include "TPlotDigitsHits.hxx"
 #include "TEventChangeManager.hxx"
+#include "TFindResultsHandler.hxx"
 #include "TTrajectoryChangeHandler.hxx"
 #include "TG4HitChangeHandler.hxx"
 
@@ -8,6 +10,7 @@
 
 #include <TEveManager.h>
 #include <TColor.h>
+#include <TGLViewer.h>
 
 #include <algorithm>
 #include <cmath>
@@ -27,15 +30,40 @@ CP::TEventDisplay::TEventDisplay() {}
 void CP::TEventDisplay::Init() {
     TEveManager::Create();
 
+    TGLViewer* glViewer = gEve->GetDefaultGLViewer();
+    glViewer->SetCurrentCamera(TGLViewer::kCameraPerspXOY);
+    glViewer->SetGuideState(TGLUtil::kAxesEdge,kTRUE,kFALSE,0);
+
     // This is accessed through the GUI() method.
     fGUIManager = new TGUIManager();
 
     // Create the event display manager.  This needs the GUI, so it has to be
     // done after TGUIManager is created.
     fEventChangeManager = new TEventChangeManager();
+    fEventChangeManager->AddNewEventHandler(new TFindResultsHandler());
+    fEventChangeManager->AddUpdateHandler(new TTrajectoryChangeHandler());
+    fEventChangeManager->AddUpdateHandler(new TG4HitChangeHandler());
 
-    fEventChangeManager->AddHandler(new TTrajectoryChangeHandler());
-    fEventChangeManager->AddHandler(new TG4HitChangeHandler());
+    // Connect the class to draw digits to the GUI.
+    fPlotDigitsHits = new TPlotDigitsHits();
+    CP::TEventDisplay::Get().GUI().GetDrawXDigitsButton()
+        ->Connect("Clicked()",
+                  "CP::TPlotDigitsHits", 
+                  fPlotDigitsHits,
+                  "DrawDigits(=0)");
+    
+    CP::TEventDisplay::Get().GUI().GetDrawVDigitsButton()
+        ->Connect("Clicked()",
+                  "CP::TPlotDigitsHits", 
+                  fPlotDigitsHits,
+                  "DrawDigits(=1)");
+    
+    CP::TEventDisplay::Get().GUI().GetDrawUDigitsButton()
+        ->Connect("Clicked()",
+                  "CP::TPlotDigitsHits", 
+                  fPlotDigitsHits,
+                  "DrawDigits(=2)");
+    
 
     CaptLog("Event display constructed");
 }

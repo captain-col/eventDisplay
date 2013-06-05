@@ -5,6 +5,7 @@ namespace CP {
     class TEventDisplay;
     class TGUIManager;
     class TEventChangeManager;
+    class TPlotDigitsHits;
 };
 
 /// A singleton class for an event display based on EVE.
@@ -45,6 +46,9 @@ private:
 
     // The event change manager.
     TEventChangeManager* fEventChangeManager;
+
+    // The digit drawing class.  This is connected directly to the buttons.
+    TPlotDigitsHits* fPlotDigitsHits;
 
 };
 
