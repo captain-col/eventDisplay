@@ -17,7 +17,6 @@ bool CP::TShowDriftHits::operator () (TEveElementList* elements,
     TVector3 drift(0,0,fDriftVelocity);
     for (CP::THitSelection::const_iterator h = hits.begin();
          h != hits.end(); ++h) {
-        // NEED TO ADD CODE TO ACTUALLY BUILD THE BOX FROM THE HIT.
         // The position is the position drifted to the time zero.
         // The size (s) is the rms
         // The value is the charge.

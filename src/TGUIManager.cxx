@@ -82,16 +82,6 @@ void CP::TGUIManager::MakeControlTab() {
     checkButton->SetOn();
     fShowG4HitsButton = checkButton;
 
-    checkButton = new TGCheckButton(hf,"Show 3D Hits");
-    checkButton->SetToolTipText(
-        "Show the reconstructed 3D hits.");
-    checkButton->SetTextJustify(36);
-    checkButton->SetMargins(0,0,0,0);
-    checkButton->SetWrapLength(-1);
-    hf->AddFrame(checkButton, layoutHints);
-    checkButton->SetOn();
-    fShowHitsButton = checkButton;
-
     checkButton = new TGCheckButton(hf,"Show Recon Objects");
     checkButton->SetToolTipText(
         "Show the reconstructed objects.");

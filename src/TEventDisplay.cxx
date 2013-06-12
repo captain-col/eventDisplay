@@ -5,6 +5,7 @@
 #include "TFindResultsHandler.hxx"
 #include "TTrajectoryChangeHandler.hxx"
 #include "TG4HitChangeHandler.hxx"
+#include "TFitChangeHandler.hxx"
 
 #include <TCaptLog.hxx>
 
@@ -43,6 +44,7 @@ void CP::TEventDisplay::Init() {
     fEventChangeManager->AddNewEventHandler(new TFindResultsHandler());
     fEventChangeManager->AddUpdateHandler(new TTrajectoryChangeHandler());
     fEventChangeManager->AddUpdateHandler(new TG4HitChangeHandler());
+    fEventChangeManager->AddUpdateHandler(new TFitChangeHandler());
 
     // Connect the class to draw digits to the GUI.
     fPlotDigitsHits = new TPlotDigitsHits();

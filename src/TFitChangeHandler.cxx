@@ -1,6 +1,7 @@
 #include "TFitChangeHandler.hxx"
 #include "TEventDisplay.hxx"
 #include "TGUIManager.hxx"
+#include "TShowDriftHits.hxx"
 
 #include <TCaptLog.hxx>
 #include <TEvent.hxx>
@@ -10,6 +11,8 @@
 
 #include <TGeoManager.h>
 #include <TGButton.h>
+#include <TGListBox.h>
+#include <TCollection.h>
 
 #include <TEveManager.h>
 #include <TEveLine.h>
@@ -38,5 +41,34 @@ void CP::TFitChangeHandler::Apply() {
     CaptLog("Handle the fit information");
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
     if (!event) return;
+
+    // Get a TList of all of the selected entries.
+    TList selected;
+    CP::TEventDisplay::Get().GUI().GetResultsList()
+        ->GetSelectedEntries(&selected);
+
+    CP::TShowDriftHits showDrift(1.6*unit::mm/unit::microsecond);
+
+    // Iterate through the list of selected entries.
+    TIter next(&selected);
+    TGLBEntry* lbEntry;
+    while ((lbEntry = (TGLBEntry*) next())) {
+        std::string objName(lbEntry->GetTitle());
+        CP::THandle<CP::TReconObjectContainer> objects 
+            = event->Get<CP::TReconObjectContainer>(objName.c_str());
+        if (!objects) {
+            CaptError("No object container " << objName);
+            continue;
+        }            
+        std::cout << " objects " << objects->GetName() << std::endl;
+        for (CP::TReconObjectContainer::iterator obj = objects->begin();
+             obj != objects->end(); ++obj) {
+            std::cout << "    object " << (*obj)->GetTitle() << std::endl;
+            std::cout << "      hits " << (*obj)->GetHits()->size() << std::endl;
+            double t0 = (*obj)->GetHits()->front()->GetTime()
+                - 500*unit::microsecond;
+            showDrift(fHitList, *(*obj)->GetHits(), t0);
+        }
+    }
 
 }
