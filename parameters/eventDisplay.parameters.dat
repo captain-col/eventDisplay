@@ -1,0 +1,8 @@
+Define the time per digit in the TPulseDigit.  This needs to match the
+value in the databases, and is used to plot hits versus digits.
+
+< eventDisplay.digitization.step = 250 ns >
+
+Define the offset from zero used in the calibration.
+
+< eventDisplay.digitization.offset = 0 ns >

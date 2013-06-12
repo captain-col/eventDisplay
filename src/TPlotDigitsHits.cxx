@@ -1,15 +1,20 @@
 #include "TPlotDigitsHits.hxx"
 
+#include <HEPUnits.hxx>
 #include <TCaptLog.hxx>
+#include <CaptGeomId.hxx>
 #include <TEvent.hxx>
 #include <TEventFolder.hxx>
 #include <TPulseDigit.hxx>
 #include <TMCChannelId.hxx>
+#include <TRuntimeParameters.hxx>
 
 #include <TCanvas.h>
 #include <TPad.h>
 #include <TH2F.h>
 #include <TColor.h>
+#include <TPolyLine.h>
+#include <TMarker.h>
 
 #include <cmath>
 #include <algorithm>
@@ -21,6 +26,15 @@ CP::TPlotDigitsHits::TPlotDigitsHits()
     Double_t b[]    = {0.4, 1., 0.};
     Double_t stop[] = {0., 0.5, 1.};
     TColor::CreateGradientColorTable(3, stop, r, g, b, 100);
+
+    fDigitStep 
+        = CP::TRuntimeParameters::Get().GetParameterD(
+            "eventDisplay.digitization.step");
+
+    fDigitOffset 
+        = CP::TRuntimeParameters::Get().GetParameterD(
+            "eventDisplay.digitization.offset");
+
 }
 
 CP::TPlotDigitsHits::~TPlotDigitsHits() {}
@@ -134,4 +148,67 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     digitPlot->Draw("colz");
     
     gPad->Update();
+
+    ////////////////////////////////////////////////////////////
+    // Now plot the 2D hits on the histogram.
+    ////////////////////////////////////////////////////////////
+    
+    CP::THandle<CP::THitSelection> hits
+        = event->Get<CP::THitSelection>("~/hits/drift");
+
+    if (!hits) return;
+
+    for (std::vector<TObject*>::iterator g = fGraphicsDelete.begin();
+         g != fGraphicsDelete.end(); ++g) {
+        delete (*g);
+    }
+    fGraphicsDelete.clear();
+
+    for (CP::THitSelection::iterator h = hits->begin();
+         h != hits->end(); ++h) {
+        TGeometryId id = (*h)->GetGeomId();
+        if (CP::GeomId::Captain::GetWirePlane(id) != projection) continue;
+        // The wire number (offset for the middle of the bin).
+        double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
+        // The hit time.
+        double time = (*h)->GetTime();
+        // The digitized hit time.
+        double dTime = (time+fDigitOffset)/fDigitStep;
+        // The hit RMS.
+        double rms = (*h)->GetTimeRMS();
+        // The digitized RMS
+        double dRMS = -1;
+        if (rms<10*unit::microsecond) dRMS = rms/fDigitStep;
+        // The hit uncertainty
+        double sig = (*h)->GetTimeUncertainty();
+        // The digitized hit uncertainty
+        double dSig = sig/fDigitStep;
+
+        std::cout << "t " << time << " +/- " << sig << " +/- " << rms 
+                  << "   --   " << dTime << " +/- " << dSig << " +/- " << dRMS 
+                  << std::endl;
+        TMarker* vtx = new TMarker(wire, dTime, 6);
+        vtx->SetMarkerSize(1);
+        vtx->SetMarkerColor(kRed);
+        vtx->Draw();
+        fGraphicsDelete.push_back(vtx);
+
+        if (dRMS > 0) {
+            int n=0;
+            double px[10];
+            double py[10];
+            px[n] = wire;
+            py[n++] = dTime-dRMS;
+            px[n] = wire;
+            py[n++] = dTime+dRMS;
+            TPolyLine* pline = new TPolyLine(n,px,py);
+            pline->SetLineWidth(1);
+            pline->SetLineColor(kRed);
+            pline->Draw();
+            fGraphicsDelete.push_back(pline);
+        }
+    }
+    
+    gPad->Update();
+    
 }
