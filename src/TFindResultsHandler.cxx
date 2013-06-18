@@ -49,7 +49,8 @@ void CP::TFindResultsHandler::Apply() {
                           fullName) != existingEntries.end()) continue;
             existingEntries.push_back(fullName);
             resultsList->AddEntry(rc->GetFullName(),++id);
-            if (fullName.find(defaultResult)!=std::string::npos) {
+            if (defaultResult.size() > 0 && 
+                fullName.find(defaultResult)!=std::string::npos) {
                 resultsList->Select(id);
             }
             continue;
