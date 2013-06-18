@@ -184,9 +184,6 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         // The digitized hit uncertainty
         double dSig = sig/fDigitStep;
 
-        std::cout << "t " << time << " +/- " << sig << " +/- " << rms 
-                  << "   --   " << dTime << " +/- " << dSig << " +/- " << dRMS 
-                  << std::endl;
         TMarker* vtx = new TMarker(wire, dTime, 6);
         vtx->SetMarkerSize(1);
         vtx->SetMarkerColor(kRed);
