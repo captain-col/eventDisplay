@@ -64,9 +64,9 @@ void CP::TFitChangeHandler::Apply() {
         for (CP::TReconObjectContainer::iterator obj = objects->begin();
              obj != objects->end(); ++obj) {
             std::cout << "    object " << (*obj)->GetTitle() << std::endl;
-            std::cout << "      hits " << (*obj)->GetHits()->size() << std::endl;
-            double t0 = (*obj)->GetHits()->front()->GetTime()
-                - 500*unit::microsecond;
+            std::cout << "      hits " << (*obj)->GetHits()->size() 
+                      << std::endl;
+            double t0 = (*obj)->GetHits()->front()->GetTime();
             showDrift(fHitList, *(*obj)->GetHits(), t0);
         }
     }
