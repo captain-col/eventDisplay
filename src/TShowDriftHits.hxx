@@ -2,6 +2,7 @@
 #define TShowDriftHits_hxx_seen
 
 #include <THitSelection.hxx>
+#include <HEPUnits.hxx>
 
 namespace CP {
     class TShowDriftHits;
@@ -16,11 +17,11 @@ public:
 
     /// Construct an object to show the hits using a drift velocity.  The
     /// drift is assumed to be on the Z axis.
-    explicit TShowDriftHits(double velocity);
+    explicit TShowDriftHits(double velocity = 1.6*unit::mm/unit::microsecond);
 
     /// Show the hits in the selection using a particular t0.  The element
     /// list is mutated by adding elements that will actually show the hit
-    /// (nominally, this adds a box set.
+    /// (nominally, this adds a box set).
     bool operator () (TEveElementList* elements, 
                       const CP::THitSelection& hits,
                       double t0);
