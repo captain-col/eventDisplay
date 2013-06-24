@@ -159,10 +159,14 @@ void CP::TGUIManager::MakeResultsTab() {
                                                    2,2,2,2);
     hf->AddFrame(txt,layoutHints);
 
-    // Create a text entry button to choose a default result.
+    // Create a text entry button to choose a default result.  This also sets
+    // the default default result.  It should be possible to override this
+    // from the command line!
     fDefaultResult = new TGTextEntry(hf);
-    hf->AddFrame(fDefaultResult,layoutHints);
+    fDefaultResult->SetText("TCaptainRecon/final");
 
+    hf->AddFrame(fDefaultResult,layoutHints);
+    
     // Do the final layout and mapping.
     TGLayoutHints* layoutFrame 
         = new TGLayoutHints(kLHintsLeft 
