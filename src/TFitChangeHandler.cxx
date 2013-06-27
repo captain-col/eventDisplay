@@ -211,9 +211,9 @@ void CP::TFitChangeHandler::ShowReconCluster(
 
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
     
-    clusterShape->SetMainColor(kRed);
+    clusterShape->SetMainColor(kCyan-9);
     clusterShape->SetMainTransparency(50);
-        
+
     // Create the rotation matrix.
     TGeoRotation rot;
     rot.SetMatrix(eigenDirs.GetMatrixArray());
