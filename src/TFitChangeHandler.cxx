@@ -212,7 +212,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
     
     clusterShape->SetMainColor(kCyan-9);
-    clusterShape->SetMainTransparency(50);
+    clusterShape->SetMainTransparency(30);
 
     // Create the rotation matrix.
     TGeoRotation rot;
@@ -248,21 +248,25 @@ void CP::TFitChangeHandler::ShowReconCluster(
 void CP::TFitChangeHandler::ShowReconShower(
     CP::THandle<CP::TReconShower> obj) {
     if (!obj) return;
+    CaptError("ShowReconShower not Implemented");
 }
 
 void CP::TFitChangeHandler::ShowReconTrack(
     CP::THandle<CP::TReconTrack> obj) {
     if (!obj) return;
+    CaptError("ShowReconTrack not Implemented");
 }
 
 void CP::TFitChangeHandler::ShowReconPID(
     CP::THandle<CP::TReconPID> obj) {
     if (!obj) return;
+    CaptError("ShowReconPID not Implemented");
 }
 
 void CP::TFitChangeHandler::ShowReconVertex(
     CP::THandle<CP::TReconVertex> obj) {
     if (!obj) return;
+    CaptError("ShowReconVertex not Implemented");
 }
 
 void CP::TFitChangeHandler::ShowReconObjects(
