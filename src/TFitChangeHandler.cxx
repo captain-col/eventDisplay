@@ -254,7 +254,82 @@ void CP::TFitChangeHandler::ShowReconShower(
 void CP::TFitChangeHandler::ShowReconTrack(
     CP::THandle<CP::TReconTrack> obj) {
     if (!obj) return;
-    CaptError("ShowReconTrack not Implemented");
+
+    CP::THandle<CP::TTrackState> state = obj->GetState();
+    if (!state) {
+        CaptError("TTrackState missing!");
+        return;
+    }
+    TLorentzVector pos = state->GetPosition();
+    TLorentzVector var = state->GetPositionVariance();
+    TVector3 dir = state->GetDirection().Unit();
+    TVector3 dvar = state->GetDirectionVariance();
+
+    CaptLog(
+        "Track @ " 
+        << ShowMeasurement(pos.X(),std::sqrt(var.X()),"length")
+        <<", "<<ShowMeasurement(pos.Y(),std::sqrt(var.Y()),"length")
+        <<", "<<ShowMeasurement(pos.Z(),std::sqrt(var.Z()),"length"));
+    
+    CP::TCaptLog::IncreaseIndentation();
+    
+    CaptLog("Direction: (" 
+             << ShowMeasurement(dir.X(), dvar.X(),"direction")
+             << ", " << ShowMeasurement(dir.Y(), dvar.Y(),"direction")
+             << ", " << ShowMeasurement(dir.Z(), dvar.Z(),"direction")
+             << ")");
+    
+    CaptLog("Algorithm: " << obj->GetAlgorithmName());
+    
+    CP::THandle<CP::TTrackState> backState = obj->GetBack();
+    if (backState) {
+        TLorentzVector v = backState->GetPositionVariance();
+        if (v.Mag() < 10000) {
+            TLorentzVector p = backState->GetPosition();
+            TVector3 d = backState->GetDirection().Unit();
+            TVector3 dv = backState->GetDirectionVariance();
+            CP::TCaptLog::IncreaseIndentation();
+            CaptLog("Back Pos:  " 
+                    << ShowMeasurement(p.X(),std::sqrt(v.X()),"length")
+                    <<", "<<ShowMeasurement(p.Y(),std::sqrt(v.Y()),"length")
+                    <<", "<<ShowMeasurement(p.Z(),std::sqrt(v.Z()),"length"));
+            CaptLog("Back Dir: (" 
+                    << ShowMeasurement(d.X(), dv.X(),"direction")
+                    << ", " << ShowMeasurement(d.Y(), dv.Y(),"direction")
+                    << ", " << ShowMeasurement(d.Z(), dv.Z(),"direction")
+                    << ")");
+            CP::TCaptLog::DecreaseIndentation();
+        }
+    }
+
+    CP::TReconNodeContainer& nodes = obj->GetNodes();
+    CaptNamedInfo("nodes", "Track Nodes " << nodes.size());
+    CP::TCaptLog::IncreaseIndentation();
+    
+    TEveLine* eveTrack = new TEveLine(nodes.size());
+    eveTrack->SetName(obj->GetName()); 
+    // This is used as the annotation, so it needs to be better.
+    std::ostringstream title;
+    title << "Track";
+    eveTrack->SetTitle(title.str().c_str());
+    eveTrack->SetLineColor(kBlue);
+    eveTrack->SetLineStyle(7);
+    eveTrack->SetLineWidth(4);
+
+    int p=0;
+    for (CP::TReconNodeContainer::iterator n = nodes.begin();
+         n != nodes.end(); ++n) {
+        CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
+        if (!nodeState) continue;
+        TLorentzVector nodePos = nodeState->GetPosition();
+        eveTrack->SetPoint(p++, nodePos.X(), nodePos.Y(), nodePos.Z());
+    }
+
+    fFitList->AddElement(eveTrack);
+
+    CP::TCaptLog::DecreaseIndentation();
+
+    CP::TCaptLog::DecreaseIndentation();
 }
 
 void CP::TFitChangeHandler::ShowReconPID(
@@ -266,7 +341,31 @@ void CP::TFitChangeHandler::ShowReconPID(
 void CP::TFitChangeHandler::ShowReconVertex(
     CP::THandle<CP::TReconVertex> obj) {
     if (!obj) return;
-    CaptError("ShowReconVertex not Implemented");
+
+    CP::THandle<CP::TVertexState> state = obj->GetState();
+    if (!state) {
+        CaptError("TVertexState missing!");
+        return;
+    }
+    TLorentzVector pos = state->GetPosition();
+    TLorentzVector var = state->GetPositionVariance();
+
+    CaptLog("Vertex @ " 
+            << ShowMeasurement(pos.X(),std::sqrt(var.X()),"length")
+            <<", "<<ShowMeasurement(pos.Y(),std::sqrt(var.Y()),"length")
+            <<", "<<ShowMeasurement(pos.Z(),std::sqrt(var.Z()),"length"));
+    
+    CP::THandle<CP::TReconObjectContainer> 
+        constituents = obj->GetConstituents();
+    if (constituents) {
+        CP::TCaptLog::IncreaseIndentation();
+        CaptLog("Constituent objects: " << constituents->size());
+        CP::TCaptLog::IncreaseIndentation();
+        ShowReconObjects(constituents);
+        CP::TCaptLog::DecreaseIndentation();
+        CP::TCaptLog::DecreaseIndentation();
+    }
+
 }
 
 void CP::TFitChangeHandler::ShowReconObjects(
