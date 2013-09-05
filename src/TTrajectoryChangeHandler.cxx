@@ -55,6 +55,12 @@ void CP::TTrajectoryChangeHandler::Apply() {
          ++tPair) {
         CP::TG4Trajectory& traj = tPair->second;
         const CP::TG4Trajectory::Points& points = traj.GetTrajectoryPoints();
+        const TParticlePDG *pdg = traj.GetParticle();
+
+        bool charged = false;
+        if (pdg) {
+            charged = (std::abs(pdg->Charge()) > 0.1);
+        }
 
         std::ostringstream label;
         label << traj.GetParticleName() 
@@ -64,7 +70,8 @@ void CP::TTrajectoryChangeHandler::Apply() {
         track->SetName("trajectory");
         track->SetTitle(label.str().c_str());
         track->SetLineColor(kYellow);
-        track->SetLineStyle(3);
+        if (charged) track->SetLineStyle(3);
+        else track->SetLineStyle(4);
 
         for (std::size_t p = 0; p < points.size(); ++p) {
             gGeoManager->PushPath();
