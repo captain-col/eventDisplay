@@ -34,6 +34,10 @@ namespace {
             // Use geometry identifiers to change to the drift region.
             CP::TGeometryId id = CP::GeomId::Captain::Drift();
             CP::TManager::Get().GeomId().CdId(id); 
+
+            // Don't draw the geometry volume since it confuses the plot.
+            return;
+
             TGeoNode* current = gGeoManager->GetCurrentNode();
             TGeoMatrix* currMat = gGeoManager->GetCurrentMatrix();
             TGeoShape* currShape = current->GetVolume()->GetShape();

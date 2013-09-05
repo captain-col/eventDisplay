@@ -6,6 +6,7 @@
 #include <TEvent.hxx>
 #include <TEventFolder.hxx>
 #include <TPulseDigit.hxx>
+#include <TCalibPulseDigit.hxx>
 #include <TMCChannelId.hxx>
 #include <TRuntimeParameters.hxx>
 
@@ -18,6 +19,55 @@
 
 #include <cmath>
 #include <algorithm>
+
+namespace {
+    double GetDigitFirstTime(const CP::TDigit* d) {
+        const CP::TPulseDigit* pulse 
+            = dynamic_cast<const CP::TPulseDigit*>(d);
+        if (pulse) return pulse->GetFirstSample();
+        const CP::TCalibPulseDigit* calib 
+            = dynamic_cast<const CP::TCalibPulseDigit*>(d);
+        if (calib) return calib->GetFirstSample()/1000;
+        return 0.0;
+    }
+
+    double GetDigitLastTime(const CP::TDigit* d) {
+        const CP::TPulseDigit* pulse 
+            = dynamic_cast<const CP::TPulseDigit*>(d);
+        if (pulse) return pulse->GetFirstSample()+pulse->GetSampleCount();
+        const CP::TCalibPulseDigit* calib 
+            = dynamic_cast<const CP::TCalibPulseDigit*>(d);
+        if (calib) return calib->GetLastSample()/1000;
+        return 0.0;
+    }
+
+    int GetDigitSampleCount(const CP::TDigit* d) {
+        const CP::TPulseDigit* pulse 
+            = dynamic_cast<const CP::TPulseDigit*>(d);
+        if (pulse) return pulse->GetSampleCount();
+        const CP::TCalibPulseDigit* calib 
+            = dynamic_cast<const CP::TCalibPulseDigit*>(d);
+        if (calib) return calib->GetSampleCount();
+        return 0;
+    }
+
+    double GetDigitSampleTime(const CP::TDigit* d) {
+        double diff = GetDigitLastTime(d) - GetDigitFirstTime(d);
+        return diff/GetDigitSampleCount(d);
+    }
+
+    double GetDigitSample(const CP::TDigit* d, int i) {
+        const CP::TPulseDigit* pulse 
+            = dynamic_cast<const CP::TPulseDigit*>(d);
+        if (pulse) return pulse->GetSample(i);
+        const CP::TCalibPulseDigit* calib 
+            = dynamic_cast<const CP::TCalibPulseDigit*>(d);
+        if (calib) return calib->GetSample(i);
+        return 0;
+    }
+
+
+};
 
 CP::TPlotDigitsHits::TPlotDigitsHits()
     : fXPlaneHist(NULL), fVPlaneHist(NULL), fUPlaneHist(NULL) {
@@ -45,8 +95,16 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
 
     CP::THandle<CP::TDigitContainer> pmt
         = event->Get<CP::TDigitContainer>("~/digits/pmt");
+
+    // True if the sample values are times (not number of samples).
+    bool samplesInTime = true;
+
     CP::THandle<CP::TDigitContainer> drift
-        = event->Get<CP::TDigitContainer>("~/digits/drift");
+        = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
+    if (!drift) {
+        drift = event->Get<CP::TDigitContainer>("~/digits/drift");
+        samplesInTime = false;
+    }
     
     if (!pmt) {
         CaptLog("No PMT signals for this event");
@@ -58,27 +116,29 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         return;
     }
     
-    std::vector<int> times;
-    std::vector<int> samples;
+    std::vector<double> times;
+    std::vector<double> samples;
+    double digitSampleTime = 1;
     for (CP::TDigitContainer::const_iterator d = drift->begin();
          d != drift->end(); ++d) {
-        const CP::TPulseDigit* pulse 
-            = dynamic_cast<const CP::TPulseDigit*>(*d);
-        if (!pulse) continue;
-        times.push_back(pulse->GetFirstSample());
-        times.push_back(pulse->GetFirstSample()+pulse->GetSampleCount());
-        for (std::size_t i = 0; i < pulse->GetSampleCount(); ++i) {
-            samples.push_back(pulse->GetSample(i));
+        times.push_back(GetDigitFirstTime(*d));
+        times.push_back(GetDigitLastTime(*d));
+        digitSampleTime = GetDigitSampleTime(*d);
+        for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
+            samples.push_back(GetDigitSample(*d,i));
         }
     }
     std::sort(times.begin(),times.end());
     std::sort(samples.begin(),samples.end());
     
-    int signalStart = times[0.05*times.size()];
-    int signalEnd = times[0.95*times.size()];
-    int signalSpread = signalEnd-signalStart;
+    double signalStart = times[0.05*times.size()];
+    double signalEnd = times[0.95*times.size()];
+    int signalSpread = (signalEnd-signalStart)/digitSampleTime;
     int signalBuffer = 0.05*signalSpread;
-    int medianSample = samples[0.5*samples.size()];
+    double medianSample = samples[0.5*samples.size()];
+
+    CaptLog("signal range " << signalStart << " to " << signalEnd);
+    CaptLog("sample median " << medianSample);
 
     TH2F* digitPlot = NULL;
 
@@ -91,7 +151,8 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
                        signalSpread+2*signalBuffer,
                        signalStart-signalBuffer,
                        signalEnd+signalBuffer);
-        digitPlot->SetYTitle("Sample Number");
+        if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
+        else digitPlot->SetYTitle("Sample Number");
         digitPlot->SetXTitle("X Wire");
         break;
     case 1:
@@ -102,7 +163,8 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
                        signalSpread+2*signalBuffer,
                        signalStart-signalBuffer,
                        signalEnd+signalBuffer);
-        digitPlot->SetYTitle("Sample Number");
+        if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
+        else digitPlot->SetYTitle("Sample Number");
         digitPlot->SetXTitle("V Wire");
         break;
         
@@ -114,32 +176,35 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
                        signalSpread+2*signalBuffer,
                        signalStart-signalBuffer,
                        signalEnd+signalBuffer);
-        digitPlot->SetYTitle("Sample Number");
+        if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
+        else digitPlot->SetYTitle("Sample Number");
         digitPlot->SetXTitle("U Wire");
         break;
     }    
 
-    int maxVal = 0;
+    double maxVal = 0;
     for (CP::TDigitContainer::const_iterator d = drift->begin();
          d != drift->end(); ++d) {
-        const CP::TPulseDigit* pulse 
-            = dynamic_cast<const CP::TPulseDigit*>(*d);
-        if (!pulse) continue;
+        const CP::TDigit* digit 
+            = dynamic_cast<const CP::TDigit*>(*d);
+        if (!digit) continue;
         double wire = -1;
         // Figure out if this is in the right projection, and get the wire
         // number.
-        if (pulse->GetChannelId().IsMCChannel()) {
-            CP::TMCChannelId mc(pulse->GetChannelId());
+        if (digit->GetChannelId().IsMCChannel()) {
+            CP::TMCChannelId mc(digit->GetChannelId());
             wire = mc.GetNumber()+0.5;
             if (mc.GetSequence() != (unsigned) projection) continue;
         }
-        for (std::size_t i = 0; i < pulse->GetSampleCount(); ++i) {
-            int tbin = pulse->GetFirstSample() + i;
-            int s = pulse->GetSample(i)-medianSample;
-            digitPlot->Fill(wire,tbin+0.5,pulse->GetSample(i)-medianSample);
+        for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
+            double tbin = GetDigitFirstTime(digit) 
+                + GetDigitSampleTime(digit)*i;
+            double s = GetDigitSample(digit,i)-medianSample;
+            digitPlot->Fill(wire,tbin+0.5,s);
             maxVal = std::max(maxVal,std::abs(s));
         }
     }
+    CaptLog("Maximum Value " << maxVal);
 
     digitPlot->SetMinimum(-maxVal);
     digitPlot->SetMaximum(maxVal+1);
@@ -173,16 +238,12 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         // The hit time.
         double time = (*h)->GetTime();
         // The digitized hit time.
-        double dTime = (time+fDigitOffset)/fDigitStep;
+        double dTime = (time+fDigitOffset)/(fDigitStep/digitSampleTime);
         // The hit RMS.
         double rms = (*h)->GetTimeRMS();
         // The digitized RMS
         double dRMS = -1;
-        if (rms<10*unit::microsecond) dRMS = rms/fDigitStep;
-        // The hit uncertainty
-        double sig = (*h)->GetTimeUncertainty();
-        // The digitized hit uncertainty
-        double dSig = sig/fDigitStep;
+        if (rms<10*unit::microsecond) dRMS = rms/(fDigitStep/digitSampleTime);
 
         TMarker* vtx = new TMarker(wire, dTime, 6);
         vtx->SetMarkerSize(1);
