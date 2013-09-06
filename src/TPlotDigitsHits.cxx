@@ -41,7 +41,7 @@ namespace {
         return 0.0;
     }
 
-    int GetDigitSampleCount(const CP::TDigit* d) {
+    std::size_t GetDigitSampleCount(const CP::TDigit* d) {
         const CP::TPulseDigit* pulse 
             = dynamic_cast<const CP::TPulseDigit*>(d);
         if (pulse) return pulse->GetSampleCount();
@@ -133,12 +133,12 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     
     double signalStart = times[0.05*times.size()];
     double signalEnd = times[0.95*times.size()];
-    int signalSpread = (signalEnd-signalStart)/digitSampleTime;
-    int signalBuffer = 0.05*signalSpread;
+    int signalBins = (signalEnd-signalStart)/digitSampleTime;
     double medianSample = samples[0.5*samples.size()];
 
-    CaptLog("signal range " << signalStart << " to " << signalEnd);
-    CaptLog("sample median " << medianSample);
+    CaptLog("signal range " << signalStart 
+            << " to " << signalEnd
+            << " with " << digitSampleTime << " sampling step.");
 
     TH2F* digitPlot = NULL;
 
@@ -148,9 +148,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         fXPlaneHist = digitPlot
             = new TH2F("xPlane", "Charge on the X wires",
                        660, 0, 660,
-                       signalSpread+2*signalBuffer,
-                       signalStart-signalBuffer,
-                       signalEnd+signalBuffer);
+                       signalBins, signalStart, signalEnd);
         if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
         else digitPlot->SetYTitle("Sample Number");
         digitPlot->SetXTitle("X Wire");
@@ -160,9 +158,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         fVPlaneHist = digitPlot
             = new TH2F("vPlane", "Charge on the V wires",
                        660, 0, 660,
-                       signalSpread+2*signalBuffer,
-                       signalStart-signalBuffer,
-                       signalEnd+signalBuffer);
+                       signalBins, signalStart, signalEnd);
         if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
         else digitPlot->SetYTitle("Sample Number");
         digitPlot->SetXTitle("V Wire");
@@ -172,10 +168,8 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         if (fUPlaneHist) delete fUPlaneHist;
         fUPlaneHist = digitPlot
             = new TH2F("uPlane", "Charge on the U wires",
-                             660, 0, 660,
-                       signalSpread+2*signalBuffer,
-                       signalStart-signalBuffer,
-                       signalEnd+signalBuffer);
+                       660, 0, 660,
+                       signalBins, signalStart, signalEnd);
         if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
         else digitPlot->SetYTitle("Sample Number");
         digitPlot->SetXTitle("U Wire");
