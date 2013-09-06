@@ -1,4 +1,6 @@
 #include "TPlotDigitsHits.hxx"
+#include "TEventDisplay.hxx"
+#include "TGUIManager.hxx"
 
 #include <HEPUnits.hxx>
 #include <TCaptLog.hxx>
@@ -97,13 +99,13 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         = event->Get<CP::TDigitContainer>("~/digits/pmt");
 
     // True if the sample values are times (not number of samples).
-    bool samplesInTime = true;
-
+    bool samplesInTime = false;
     CP::THandle<CP::TDigitContainer> drift
-        = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
-    if (!drift) {
-        drift = event->Get<CP::TDigitContainer>("~/digits/drift");
-        samplesInTime = false;
+        = event->Get<CP::TDigitContainer>("~/digits/drift");
+    if (!CP::TEventDisplay::Get().GUI().GetShowRawDigitsButton()->IsOn()
+        or !drift) {
+        drift = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
+        samplesInTime = true;
     }
     
     if (!pmt) {
@@ -115,26 +117,41 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         CaptLog("No drift signals for this event"); 
         return;
     }
-    
-    std::vector<double> times;
+
     std::vector<double> samples;
-    double digitSampleTime = 1;
     for (CP::TDigitContainer::const_iterator d = drift->begin();
          d != drift->end(); ++d) {
-        times.push_back(GetDigitFirstTime(*d));
-        times.push_back(GetDigitLastTime(*d));
-        digitSampleTime = GetDigitSampleTime(*d);
         for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
             samples.push_back(GetDigitSample(*d,i));
         }
     }
-    std::sort(times.begin(),times.end());
     std::sort(samples.begin(),samples.end());
-    
-    double signalStart = times[0.05*times.size()];
-    double signalEnd = times[0.95*times.size()];
-    int signalBins = (signalEnd-signalStart)/digitSampleTime;
     double medianSample = samples[0.5*samples.size()];
+    double maxSample = std::abs(samples[0.99*samples.size()]-medianSample);
+    maxSample = std::max(maxSample,
+                         std::abs(samples[0.01*samples.size()]-medianSample));
+
+    std::cout << "Max Sample " << maxSample << std::endl;
+
+    std::vector<double> times;
+    double digitSampleTime = 1;
+    for (CP::TDigitContainer::const_iterator d = drift->begin();
+         d != drift->end(); ++d) {
+        digitSampleTime = GetDigitSampleTime(*d);
+        double maxSignal = 0.0;
+        for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
+            maxSignal = std::max(maxSignal,
+                                 std::abs(GetDigitSample(*d,i)-medianSample));
+        }
+        if (maxSignal < 0.25*maxSample) continue;
+        times.push_back(GetDigitFirstTime(*d));
+        times.push_back(GetDigitLastTime(*d));
+    }
+    std::sort(times.begin(),times.end());
+    
+    double signalStart = times[0.01*times.size()];
+    double signalEnd = times[0.99*times.size()];
+    int signalBins = (signalEnd-signalStart)/digitSampleTime;
 
     TH2F* digitPlot = NULL;
 

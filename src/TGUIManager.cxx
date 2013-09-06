@@ -122,6 +122,15 @@ void CP::TGUIManager::MakeControlTab() {
                                "  Also show the U hits.");
 
 
+    checkButton = new TGCheckButton(hf,"Show raw digits");
+    checkButton->SetToolTipText(
+        "Show the raw, not calibrated digits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowRawDigitsButton = checkButton;
+
     // Do the final layout and mapping.
     mainFrame->AddFrame(hf, layoutHints);
     mainFrame->MapSubwindows();

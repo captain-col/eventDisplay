@@ -63,6 +63,9 @@ public:
     /// Get the button to draw the U plane digits.
     TGButton* GetDrawUDigitsButton() {return fDrawUDigitsButton;}
 
+    /// Get the button to draw the U plane digits.
+    TGButton* GetShowRawDigitsButton() {return fShowRawDigitsButton;}
+
     //////////////////////
     // RESULTS TAB WIDGETS
     //////////////////////
@@ -91,7 +94,8 @@ private:
     TGButton* fDrawUDigitsButton;
     TGButton* fDrawVDigitsButton;
     TGButton* fDrawXDigitsButton;
-    
+    TGButton* fShowRawDigitsButton;
+
     /// Make a tab in the browser to select algorithms shown.
     void MakeResultsTab();
     
