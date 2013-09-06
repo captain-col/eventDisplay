@@ -136,10 +136,6 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     int signalBins = (signalEnd-signalStart)/digitSampleTime;
     double medianSample = samples[0.5*samples.size()];
 
-    CaptLog("signal range " << signalStart 
-            << " to " << signalEnd
-            << " with " << digitSampleTime << " sampling step.");
-
     TH2F* digitPlot = NULL;
 
     switch (projection) {
@@ -194,7 +190,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
             double tbin = GetDigitFirstTime(digit) 
                 + GetDigitSampleTime(digit)*i;
             double s = GetDigitSample(digit,i)-medianSample;
-            digitPlot->Fill(wire,tbin+0.5,s);
+            digitPlot->Fill(wire,tbin+1E-6,s);
             maxVal = std::max(maxVal,std::abs(s));
         }
     }
@@ -237,6 +233,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         double rms = (*h)->GetTimeRMS();
         // The digitized RMS
         double dRMS = -1;
+
         if (rms<10*unit::microsecond) dRMS = rms/(fDigitStep/digitSampleTime);
 
         TMarker* vtx = new TMarker(wire, dTime, 6);

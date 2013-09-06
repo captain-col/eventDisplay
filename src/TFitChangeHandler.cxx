@@ -28,77 +28,6 @@
 
 #include <sstream>
 
-namespace {
-    std::string ShowMeasurement(double val, double sig, std::string type) {
-        CP::TUnitsTable& u = CP::TUnitsTable::Get();
-        std::ostringstream measure;
-        if (type == "length") {
-            measure << u.ConvertLength(val);
-            if (CP::TCorrValues::IsFree(sig)) measure << " (free)";
-            else if (CP::TCorrValues::IsFixed(sig)) measure << " (fixed)";
-            else measure << "+-" << u.ConvertLength(sig);
-        }
-        else if (type == "time") {
-            measure << u.ConvertTime(val);
-            if (CP::TCorrValues::IsFree(sig)) measure << " (free)";
-            else if (CP::TCorrValues::IsFixed(sig)) measure << " (fixed)";
-            else measure << "+-" << u.ConvertTime(sig);
-        }
-        else if (type == "direction") {
-            measure << std::fixed;
-            measure << std::setprecision(3);
-            measure << val;
-            if (sig > 0) {
-                if (CP::TCorrValues::IsFree(sig)) measure << " (free)";
-                else if (CP::TCorrValues::IsFixed(sig)) measure << " (fixed)";
-                else measure << "+-" << sig;
-            }
-        }
-        else if (type == "angle") {
-            measure << std::fixed;
-            measure << std::setprecision(1);
-            measure << val/unit::degree;
-            if (sig<0) measure << " deg";
-            else if (CP::TCorrValues::IsFree(sig)) measure << " deg (free)";
-            else if (CP::TCorrValues::IsFixed(sig)) measure << " deg (fixed)";
-            else measure << "+-" << sig/unit::degree << " deg";
-        }
-        else if (type == "pe") {
-            measure << std::fixed;
-            measure << std::setprecision(1);
-            measure << val;
-            if (sig<0) measure << " pe";
-            else if (CP::TCorrValues::IsFree(sig)) measure << " pe (free)";
-            else if (CP::TCorrValues::IsFixed(sig)) measure << " pe (fixed)";
-            else measure << "+-" << sig << " pe";
-        }
-        else if (type == "momentum") {
-            measure << std::fixed;
-            measure << std::setprecision(1);
-            measure << val/unit::MeV << " MeV/c";
-            if (sig<0) measure << " MeV/c";
-            else if (CP::TCorrValues::IsFree(sig)) measure << " MeV/c (free)";
-            else if (CP::TCorrValues::IsFixed(sig)) measure << " MeV/c (fixed)";
-            else measure << "+-" << sig << " MeV/c";
-        }
-        else if (type == "charge") {
-            measure << std::fixed;
-            measure << std::setprecision(1);
-            measure << val;
-            if (sig<0) measure << " e";
-            else if (CP::TCorrValues::IsFree(sig)) measure << " e (free)";
-            else if (CP::TCorrValues::IsFixed(sig)) measure << " e (fixed)";
-            else measure << "+-" << sig << " e";
-        }
-        else {
-            CaptError("UNKNOWN TYPE <" << type << ">");
-            exit(1);
-        }
-
-        return measure.str();
-    }
-};
-
 CP::TFitChangeHandler::TFitChangeHandler() {
     fHitList = new TEveElementList("HitList","Reconstructed 3D Hits");
     fHitList->SetMainColor(kYellow);
@@ -158,13 +87,13 @@ void CP::TFitChangeHandler::ShowReconCluster(
     TLorentzVector pos = state->GetPosition();
 
     CaptLog("Cluster @ " 
-            << ShowMeasurement(pos.X(),std::sqrt(var.X()),"length")
-            << ", " << ShowMeasurement(pos.Y(),std::sqrt(var.Y()),"length")
-            << ", " << ShowMeasurement(pos.Z(),std::sqrt(var.Z()),"length"));
+            << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+            << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+            << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
 
     CP::TCaptLog::IncreaseIndentation();
 
-    CaptLog("Time " << ShowMeasurement(pos.T(),std::sqrt(var.T()),"time"));
+    CaptLog("Time " << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
 
     // Find the orientation of the cluster from the eigen vectors.
     TVectorF eigenValues;
@@ -189,22 +118,22 @@ void CP::TFitChangeHandler::ShowReconCluster(
     eigenDirs(2,1) = eigenVectors(2,2);
     double minor = std::sqrt(eigenValues(2));
 
-    CaptLog("Long Axis (" << ShowMeasurement(len,-1,"length") << ")"
-            << " (" << ShowMeasurement(eigenVectors(0,0),-1,"direction")
-            << ", " << ShowMeasurement(eigenVectors(1,0),-1,"direction")
-            << ", " << ShowMeasurement(eigenVectors(2,0),-1,"direction") 
+    CaptLog("Long Axis (" << unit::AsString(len,-1,"length") << ")"
+            << " (" << unit::AsString(eigenVectors(0,0),-1,"direction")
+            << ", " << unit::AsString(eigenVectors(1,0),-1,"direction")
+            << ", " << unit::AsString(eigenVectors(2,0),-1,"direction") 
             << ")");
 
-    CaptLog("Major     (" << ShowMeasurement(major,-1,"length") << ")"
-            << " (" << ShowMeasurement(eigenVectors(0,1),-1,"direction")
-            << ", " << ShowMeasurement(eigenVectors(1,1),-1,"direction")
-            << ", " << ShowMeasurement(eigenVectors(2,1),-1,"direction") 
+    CaptLog("Major     (" << unit::AsString(major,-1,"length") << ")"
+            << " (" << unit::AsString(eigenVectors(0,1),-1,"direction")
+            << ", " << unit::AsString(eigenVectors(1,1),-1,"direction")
+            << ", " << unit::AsString(eigenVectors(2,1),-1,"direction") 
             << ")");
 
-    CaptLog("Minor     (" << ShowMeasurement(minor,-1,"length") << ")"
-            << " (" << ShowMeasurement(eigenVectors(0,2),-1,"direction")
-            << ", " << ShowMeasurement(eigenVectors(1,2),-1,"direction")
-            << ", " << ShowMeasurement(eigenVectors(2,2),-1,"direction") 
+    CaptLog("Minor     (" << unit::AsString(minor,-1,"length") << ")"
+            << " (" << unit::AsString(eigenVectors(0,2),-1,"direction")
+            << ", " << unit::AsString(eigenVectors(1,2),-1,"direction")
+            << ", " << unit::AsString(eigenVectors(2,2),-1,"direction") 
             << ")");
 
     CP::TCaptLog::DecreaseIndentation();
@@ -267,16 +196,16 @@ void CP::TFitChangeHandler::ShowReconTrack(
 
     CaptLog(
         "Track @ " 
-        << ShowMeasurement(pos.X(),std::sqrt(var.X()),"length")
-        <<", "<<ShowMeasurement(pos.Y(),std::sqrt(var.Y()),"length")
-        <<", "<<ShowMeasurement(pos.Z(),std::sqrt(var.Z()),"length"));
+        << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+        <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+        <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
     
     CP::TCaptLog::IncreaseIndentation();
     
     CaptLog("Direction: (" 
-             << ShowMeasurement(dir.X(), dvar.X(),"direction")
-             << ", " << ShowMeasurement(dir.Y(), dvar.Y(),"direction")
-             << ", " << ShowMeasurement(dir.Z(), dvar.Z(),"direction")
+             << unit::AsString(dir.X(), dvar.X(),"direction")
+             << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
+             << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
              << ")");
     
     CaptLog("Algorithm: " << obj->GetAlgorithmName());
@@ -290,13 +219,13 @@ void CP::TFitChangeHandler::ShowReconTrack(
             TVector3 dv = backState->GetDirectionVariance();
             CP::TCaptLog::IncreaseIndentation();
             CaptLog("Back Pos:  " 
-                    << ShowMeasurement(p.X(),std::sqrt(v.X()),"length")
-                    <<", "<<ShowMeasurement(p.Y(),std::sqrt(v.Y()),"length")
-                    <<", "<<ShowMeasurement(p.Z(),std::sqrt(v.Z()),"length"));
+                    << unit::AsString(p.X(),std::sqrt(v.X()),"length")
+                    <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
+                    <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length"));
             CaptLog("Back Dir: (" 
-                    << ShowMeasurement(d.X(), dv.X(),"direction")
-                    << ", " << ShowMeasurement(d.Y(), dv.Y(),"direction")
-                    << ", " << ShowMeasurement(d.Z(), dv.Z(),"direction")
+                    << unit::AsString(d.X(), dv.X(),"direction")
+                    << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
+                    << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
                     << ")");
             CP::TCaptLog::DecreaseIndentation();
         }
@@ -351,9 +280,9 @@ void CP::TFitChangeHandler::ShowReconVertex(
     TLorentzVector var = state->GetPositionVariance();
 
     CaptLog("Vertex @ " 
-            << ShowMeasurement(pos.X(),std::sqrt(var.X()),"length")
-            <<", "<<ShowMeasurement(pos.Y(),std::sqrt(var.Y()),"length")
-            <<", "<<ShowMeasurement(pos.Z(),std::sqrt(var.Z()),"length"));
+            << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+            <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+            <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
     
     CP::THandle<CP::TReconObjectContainer> 
         constituents = obj->GetConstituents();
