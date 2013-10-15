@@ -102,10 +102,17 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     bool samplesInTime = false;
     CP::THandle<CP::TDigitContainer> drift
         = event->Get<CP::TDigitContainer>("~/digits/drift");
+    // Check if the user wanted to see deconvolved digits, or if normal digits
+    // were not found.
     if (!CP::TEventDisplay::Get().GUI().GetShowRawDigitsButton()->IsOn()
         or !drift) {
-        drift = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
-        samplesInTime = true;
+        CP::THandle<CP::TDigitContainer> tmp
+            = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
+        // If deconvolved digits are found, then use them.
+        if (tmp) {
+            samplesInTime = true;
+            drift = tmp;
+        }
     }
     
     if (!pmt) {
@@ -122,6 +129,8 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     for (CP::TDigitContainer::const_iterator d = drift->begin();
          d != drift->end(); ++d) {
         for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
+            double s = GetDigitSample(*d,i);
+            if (!std::isfinite(s)) continue;
             samples.push_back(GetDigitSample(*d,i));
         }
     }
@@ -140,6 +149,8 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         digitSampleTime = GetDigitSampleTime(*d);
         double maxSignal = 0.0;
         for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
+            double s = GetDigitSample(*d,i);
+            if (!std::isfinite(s)) continue;
             maxSignal = std::max(maxSignal,
                                  std::abs(GetDigitSample(*d,i)-medianSample));
         }
@@ -207,10 +218,13 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
             double tbin = GetDigitFirstTime(digit) 
                 + GetDigitSampleTime(digit)*i;
             double s = GetDigitSample(digit,i)-medianSample;
+            if (!std::isfinite(s)) continue;
             digitPlot->Fill(wire,tbin+1E-6,s);
             maxVal = std::max(maxVal,std::abs(s));
         }
     }
+    maxVal= std::min(maxVal,10000.0);
+
     CaptLog("Maximum Value " << maxVal);
 
     digitPlot->SetMinimum(-maxVal);

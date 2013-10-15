@@ -121,7 +121,6 @@ void CP::TGUIManager::MakeControlTab() {
     textButton->SetToolTipText("Draw the U digits vs wire number."
                                "  Also show the U hits.");
 
-
     checkButton = new TGCheckButton(hf,"Show raw digits");
     checkButton->SetToolTipText(
         "Show the raw, not calibrated digits.");
