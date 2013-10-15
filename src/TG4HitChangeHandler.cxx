@@ -6,6 +6,7 @@
 #include <TG4HitSegment.hxx>
 #include <TEvent.hxx>
 #include <TEventFolder.hxx>
+#include <TUnitsTable.hxx>
 #include <HEPUnits.hxx>
 #include <THandle.hxx>
 
@@ -81,9 +82,13 @@ void CP::TG4HitChangeHandler::Apply() {
             TEveLine* eveHit = new TEveLine(2);
             eveHit->SetName((*h)->GetName());
             std::ostringstream title;
-            title << "G4 Hit " << std::fixed << std::setprecision(1)
+            title << "G4 Hit " << std::fixed << std::setprecision(2)
                   << energy/(unit::MeV/unit::cm) << " MeV/cm"
-                  << " for " << seg->GetTrackLength()/unit::mm << " mm";
+                  << " for " << unit::AsString(seg->GetTrackLength(),"length")
+                  << " at (" <<  unit::AsString(seg->GetStartX(), "length")
+                  << "," <<  unit::AsString(seg->GetStartY(), "length")
+                  << "," <<  unit::AsString(seg->GetStartZ(), "length") << ")";
+
             eveHit->SetTitle(title.str().c_str());
             double minEnergy = 0.1*unit::MeV;
             double maxEnergy = 20.0*unit::MeV;
