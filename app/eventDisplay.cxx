@@ -18,11 +18,14 @@ void usage();
 
 int main(int argc, char **argv) {
     std::string fileName = "";
-    
+    bool showGeometry = false;
     while (1) {
-        int c = getopt(argc, argv, "?h");
+        int c = getopt(argc, argv, "?hg");
         if (c == -1) break;
         switch (c) {
+        case 'g': // Show the geometry.
+            showGeometry = not showGeometry;
+            break;
         case '?':
         case 'h':
             usage();
@@ -51,6 +54,7 @@ int main(int argc, char **argv) {
     theApp.ExitOnException(TApplication::kExit);
 
     CP::TEventDisplay& ev = CP::TEventDisplay::Get();
+    ev.EventChange().SetShowGeometry(showGeometry);
     ev.EventChange().SetEventSource(eventSource);
 
     theApp.Run(kFALSE);
@@ -60,6 +64,8 @@ int main(int argc, char **argv) {
 
 
 void usage() {
-    std::cout << " This is a help message." << std::endl;
+    std::cout << "Usage: event-display.exe [input-file] " << std::endl;
+    std::cout << "    The event display: " << std::endl;
+    std::cout << "  -g    Toggle showing the geometry." << std::endl;
 }
 

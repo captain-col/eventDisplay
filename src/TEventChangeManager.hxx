@@ -40,6 +40,10 @@ public:
     /// method.
     void AddUpdateHandler(CP::TVEventChangeHandler* handler);
     
+    /// Set the flag to show (or not show) the geometry
+    void SetShowGeometry(bool f) {fShowGeometry = f;}
+    bool GetShowGeometry() const {return fShowGeometry;}
+
 private:
 
     /// This updates the event display for a new event using the event change
@@ -61,6 +65,9 @@ private:
 
     /// The new event handlers.
     Handlers fNewEventHandlers;
+
+    /// Flag to determine if the geometry will be drawn.
+    bool fShowGeometry;
 
     ClassDef(TEventChangeManager,0);
 };

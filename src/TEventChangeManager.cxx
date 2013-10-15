@@ -35,8 +35,9 @@ namespace {
             CP::TGeometryId id = CP::GeomId::Captain::Drift();
             CP::TManager::Get().GeomId().CdId(id); 
 
-            // Don't draw the geometry volume since it confuses the plot.
-            return;
+            if (!CP::TEventDisplay::Get().EventChange().GetShowGeometry()) {
+                return;
+            }
 
             TGeoNode* current = gGeoManager->GetCurrentNode();
             TGeoMatrix* currMat = gGeoManager->GetCurrentMatrix();
