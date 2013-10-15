@@ -92,48 +92,52 @@ void CP::TFitChangeHandler::ShowReconCluster(
             << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
 
     CP::TCaptLog::IncreaseIndentation();
-
+    
     CaptLog("Time " << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
 
     // Find the orientation of the cluster from the eigen vectors.
-    TVectorF eigenValues;
-    TMatrixF eigenVectors(obj->GetMoments().EigenVectors(eigenValues));
-    TMatrixD eigenDirs(eigenVectors);
+    TMatrixD eigenDirs(3,3);
 
-    // Long axis goes on Z
-    eigenDirs(0,2) = eigenVectors(0,0);
-    eigenDirs(1,2) = eigenVectors(1,0);
-    eigenDirs(2,2) = eigenVectors(2,0);
-    double len = std::sqrt(eigenValues(0));
+    TVector3 longAxis = obj->GetLongAxis();
+    double len = longAxis.Mag();
+    double extent = obj->GetLongExtent();
 
-    // Major axis goes on X
-    eigenDirs(0,0) = eigenVectors(0,1);
-    eigenDirs(1,0) = eigenVectors(1,1);
-    eigenDirs(2,0) = eigenVectors(2,1);
-    double major = std::sqrt(eigenValues(1));
+    longAxis = longAxis.Unit();
+    eigenDirs(0,2) = longAxis.X();
+    eigenDirs(1,2) = longAxis.Y();
+    eigenDirs(2,2) = longAxis.Z();
 
-    // Minor axis goes on Y
-    eigenDirs(0,1) = eigenVectors(0,2);
-    eigenDirs(1,1) = eigenVectors(1,2);
-    eigenDirs(2,1) = eigenVectors(2,2);
-    double minor = std::sqrt(eigenValues(2));
+    TVector3 majorAxis = obj->GetMajorAxis();
+    double major = majorAxis.Mag();
+    majorAxis = majorAxis.Unit();
+    eigenDirs(0,0) = majorAxis.X();
+    eigenDirs(1,0) = majorAxis.Y();
+    eigenDirs(2,0) = majorAxis.Z();
+
+    TVector3 minorAxis = obj->GetMinorAxis();
+    double minor = minorAxis.Mag();
+    minorAxis = minorAxis.Unit();
+    eigenDirs(0,1) = minorAxis.X();
+    eigenDirs(1,1) = minorAxis.Y();
+    eigenDirs(2,1) = minorAxis.Z();
 
     CaptLog("Long Axis (" << unit::AsString(len,-1,"length") << ")"
-            << " (" << unit::AsString(eigenVectors(0,0),-1,"direction")
-            << ", " << unit::AsString(eigenVectors(1,0),-1,"direction")
-            << ", " << unit::AsString(eigenVectors(2,0),-1,"direction") 
-            << ")");
+            << " (" << unit::AsString(longAxis.X(),-1,"direction")
+            << ", " << unit::AsString(longAxis.Y(),-1,"direction")
+            << ", " << unit::AsString(longAxis.Z(),-1,"direction") 
+            << ")"
+            << "  Extent: " << unit::AsString(extent,-1,"length"));
 
     CaptLog("Major     (" << unit::AsString(major,-1,"length") << ")"
-            << " (" << unit::AsString(eigenVectors(0,1),-1,"direction")
-            << ", " << unit::AsString(eigenVectors(1,1),-1,"direction")
-            << ", " << unit::AsString(eigenVectors(2,1),-1,"direction") 
+            << " (" << unit::AsString(majorAxis.X(),-1,"direction")
+            << ", " << unit::AsString(majorAxis.Y(),-1,"direction")
+            << ", " << unit::AsString(majorAxis.Z(),-1,"direction") 
             << ")");
 
     CaptLog("Minor     (" << unit::AsString(minor,-1,"length") << ")"
-            << " (" << unit::AsString(eigenVectors(0,2),-1,"direction")
-            << ", " << unit::AsString(eigenVectors(1,2),-1,"direction")
-            << ", " << unit::AsString(eigenVectors(2,2),-1,"direction") 
+            << " (" << unit::AsString(minorAxis.X(),-1,"direction")
+            << ", " << unit::AsString(minorAxis.Y(),-1,"direction")
+            << ", " << unit::AsString(minorAxis.Z(),-1,"direction") 
             << ")");
 
     CP::TCaptLog::DecreaseIndentation();
@@ -169,9 +173,12 @@ void CP::TFitChangeHandler::ShowReconCluster(
    
     fFitList->AddElement(clusterShape);
     
+#ifdef DRAW_CLUSTER_HITS
     // Draw the hits.
     CP::TShowDriftHits showDrift;
     showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
+#endif
+
 }
 
 void CP::TFitChangeHandler::ShowReconShower(
