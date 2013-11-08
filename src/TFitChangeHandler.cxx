@@ -53,6 +53,14 @@ void CP::TFitChangeHandler::Apply() {
         return;
     }
 
+    if (CP::TEventDisplay::Get().GUI().GetShowFitsHitsButton()->IsOn()) {
+        CaptLog("Showing Fit Hits");
+        fShowFitsHits = true;
+    }
+    else {
+        fShowFitsHits = true;
+    }
+
     CaptLog("Handle the fit information");
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
     if (!event) return;
@@ -86,14 +94,14 @@ void CP::TFitChangeHandler::ShowReconCluster(
     TLorentzVector var = state->GetPositionVariance();
     TLorentzVector pos = state->GetPosition();
 
-    CaptLog("Cluster @ " 
+    CaptNamedInfo("cluster","Cluster @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
 
     CP::TCaptLog::IncreaseIndentation();
     
-    CaptLog("Time " << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
+    CaptNamedInfo("cluster","Time " << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
 
     // Find the orientation of the cluster from the eigen vectors.
     TMatrixD eigenDirs(3,3);
@@ -121,20 +129,20 @@ void CP::TFitChangeHandler::ShowReconCluster(
     eigenDirs(1,1) = minorAxis.Y();
     eigenDirs(2,1) = minorAxis.Z();
 
-    CaptLog("Long Axis (" << unit::AsString(len,-1,"length") << ")"
+    CaptNamedInfo("cluster","Long Axis (" << unit::AsString(len,-1,"length") << ")"
             << " (" << unit::AsString(longAxis.X(),-1,"direction")
             << ", " << unit::AsString(longAxis.Y(),-1,"direction")
             << ", " << unit::AsString(longAxis.Z(),-1,"direction") 
             << ")"
             << "  Extent: " << unit::AsString(extent,-1,"length"));
 
-    CaptLog("Major     (" << unit::AsString(major,-1,"length") << ")"
+    CaptNamedInfo("cluster","Major     (" << unit::AsString(major,-1,"length") << ")"
             << " (" << unit::AsString(majorAxis.X(),-1,"direction")
             << ", " << unit::AsString(majorAxis.Y(),-1,"direction")
             << ", " << unit::AsString(majorAxis.Z(),-1,"direction") 
             << ")");
 
-    CaptLog("Minor     (" << unit::AsString(minor,-1,"length") << ")"
+    CaptNamedInfo("cluster","Minor     (" << unit::AsString(minor,-1,"length") << ")"
             << " (" << unit::AsString(minorAxis.X(),-1,"direction")
             << ", " << unit::AsString(minorAxis.Y(),-1,"direction")
             << ", " << unit::AsString(minorAxis.Z(),-1,"direction") 
@@ -143,6 +151,18 @@ void CP::TFitChangeHandler::ShowReconCluster(
     CP::TCaptLog::DecreaseIndentation();
 
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
+    
+    // Set the cluster title.
+    std::ostringstream title;
+    title << "Cluster @ ";
+    title << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+          << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+          << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
+          << std::endl;
+    title << "  Long Axis: " << unit::AsString(len,-1,"length")
+          << "  Major Axis: " << unit::AsString(major,-1,"length")
+          << "  Minor Axis: " << unit::AsString(minor,-1,"length");
+    clusterShape->SetTitle(title.str().c_str());
     
     clusterShape->SetMainColor(kCyan-9);
     clusterShape->SetMainTransparency(30);
@@ -173,11 +193,11 @@ void CP::TFitChangeHandler::ShowReconCluster(
    
     fFitList->AddElement(clusterShape);
     
-#ifdef DRAW_CLUSTER_HITS
-    // Draw the hits.
-    CP::TShowDriftHits showDrift;
-    showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
-#endif
+    if (fShowFitsHits) {
+        // Draw the hits.
+        CP::TShowDriftHits showDrift;
+        showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
+    }
 
 }
 
@@ -201,21 +221,24 @@ void CP::TFitChangeHandler::ShowReconTrack(
     TVector3 dir = state->GetDirection().Unit();
     TVector3 dvar = state->GetDirectionVariance();
 
-    CaptLog(
-        "Track @ " 
-        << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
-        <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
-        <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
+    // This is used as the annotation, so it needs to be better.
+    std::ostringstream title;
+
+    title << "Track @ " 
+          << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+          <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+          <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
+          << std::endl;
+
+    title << "   Direction: (" 
+          << unit::AsString(dir.X(), dvar.X(),"direction")
+          << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
+          << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
+          << ")"
+          << std::endl;
     
-    CP::TCaptLog::IncreaseIndentation();
-    
-    CaptLog("Direction: (" 
-             << unit::AsString(dir.X(), dvar.X(),"direction")
-             << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
-             << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
-             << ")");
-    
-    CaptLog("Algorithm: " << obj->GetAlgorithmName());
+    title << "   Algorithm: " << obj->GetAlgorithmName() 
+          << std::endl;
     
     CP::THandle<CP::TTrackState> backState = obj->GetBack();
     if (backState) {
@@ -224,19 +247,20 @@ void CP::TFitChangeHandler::ShowReconTrack(
             TLorentzVector p = backState->GetPosition();
             TVector3 d = backState->GetDirection().Unit();
             TVector3 dv = backState->GetDirectionVariance();
-            CP::TCaptLog::IncreaseIndentation();
-            CaptLog("Back Pos:  " 
-                    << unit::AsString(p.X(),std::sqrt(v.X()),"length")
-                    <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
-                    <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length"));
-            CaptLog("Back Dir: (" 
-                    << unit::AsString(d.X(), dv.X(),"direction")
-                    << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
-                    << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
-                    << ")");
-            CP::TCaptLog::DecreaseIndentation();
+            title << "      Back Pos:  " 
+                  << unit::AsString(p.X(),std::sqrt(v.X()),"length")
+                  <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
+                  <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length")
+                  << std::endl;
+            title << "      Back Dir: (" 
+                  << unit::AsString(d.X(), dv.X(),"direction")
+                  << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
+                  << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
+                  << ")";
         }
     }
+
+    CaptNamedInfo("track",title.str());
 
     CP::TReconNodeContainer& nodes = obj->GetNodes();
     CaptNamedInfo("nodes", "Track Nodes " << nodes.size());
@@ -244,9 +268,7 @@ void CP::TFitChangeHandler::ShowReconTrack(
     
     TEveLine* eveTrack = new TEveLine(nodes.size());
     eveTrack->SetName(obj->GetName()); 
-    // This is used as the annotation, so it needs to be better.
-    std::ostringstream title;
-    title << "Track";
+
     eveTrack->SetTitle(title.str().c_str());
     eveTrack->SetLineColor(kBlue);
     eveTrack->SetLineStyle(7);
@@ -256,14 +278,39 @@ void CP::TFitChangeHandler::ShowReconTrack(
     for (CP::TReconNodeContainer::iterator n = nodes.begin();
          n != nodes.end(); ++n) {
         CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
+        CP::THandle<CP::TReconBase> nodeObject = (*n)->GetObject();
         if (!nodeState) continue;
         TLorentzVector nodePos = nodeState->GetPosition();
+        TLorentzVector nodeVar = nodeState->GetPositionVariance();
         eveTrack->SetPoint(p++, nodePos.X(), nodePos.Y(), nodePos.Z());
+        CaptNamedInfo("nodes","Pos:" 
+                      << unit::AsString(nodePos.X(),
+                                        std::sqrt(nodeVar.X()),"length")
+                      <<", "<<unit::AsString(nodePos.Y(),
+                                             std::sqrt(nodeVar.Y()),"length")
+                      <<", "<<unit::AsString(nodePos.Z(),
+                                             std::sqrt(nodeVar.Z()),"length"));
+        CP::TCaptLog::IncreaseIndentation();
+        CP::THandle<CP::TReconCluster> cluster = nodeObject;
+        if (cluster) {
+            double delta = (cluster->GetPosition().Vect()-nodePos.Vect()).Mag();
+            CaptNamedInfo("nodes","Cluster: " 
+                          << unit::AsString(cluster->GetPosition().Vect(),
+                                            "length")
+                          << "  diff: " << unit::AsString(delta,"length"));
+        }
+        CaptNamedInfo("nodes",
+                      "Dir: " << unit::AsString(nodeState->GetDirection()));
+        CP::TCaptLog::DecreaseIndentation();
     }
 
     fFitList->AddElement(eveTrack);
 
-    CP::TCaptLog::DecreaseIndentation();
+    if (fShowFitsHits) {
+        // Draw the hits.
+        CP::TShowDriftHits showDrift;
+        showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
+    }
 
     CP::TCaptLog::DecreaseIndentation();
 }

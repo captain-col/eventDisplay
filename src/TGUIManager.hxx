@@ -45,8 +45,9 @@ public:
     /// Get the check button selecting if reconstruction objects are shown.
     TGButton* GetShowFitsButton() {return fShowFitsButton;}
 
-    /// Get the check button selecting if reconstruction hits are shown.
-    TGButton* GetShowHitsButton() {return fShowHitsButton;}
+    /// Get the check button selecting if hits associated with shown
+    /// reconstruction objects should be drawn.
+    TGButton* GetShowFitsHitsButton() {return fShowFitsHitsButton;}
 
     /// Get the check button selecting if trajectories should be shown.
     TGButton* GetShowTrajectoriesButton() {return fShowTrajectoriesButton;}
@@ -88,7 +89,7 @@ private:
     TGButton* fDrawEventButton;
     TGButton* fPrevEventButton;
     TGButton* fShowFitsButton;
-    TGButton* fShowHitsButton;
+    TGButton* fShowFitsHitsButton;
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
     TGButton* fDrawUDigitsButton;

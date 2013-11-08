@@ -55,5 +55,9 @@ private:
     /// The hits to draw in the event.
     TEveElementList* fHitList;
 
+    /// A boolean to flag if hits associated with reconstructed objects should
+    /// be drawn.
+    bool fShowFitsHits;
+
 };
 #endif
