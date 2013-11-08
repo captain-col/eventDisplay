@@ -58,7 +58,7 @@ void CP::TFitChangeHandler::Apply() {
         fShowFitsHits = true;
     }
     else {
-        fShowFitsHits = true;
+        fShowFitsHits = false;
     }
 
     CaptLog("Handle the fit information");
