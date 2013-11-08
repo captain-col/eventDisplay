@@ -101,7 +101,8 @@ void CP::TFitChangeHandler::ShowReconCluster(
 
     CP::TCaptLog::IncreaseIndentation();
     
-    CaptNamedInfo("cluster","Time " << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
+    CaptNamedInfo("cluster","Time " 
+                  << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
 
     // Find the orientation of the cluster from the eigen vectors.
     TMatrixD eigenDirs(3,3);
@@ -129,25 +130,28 @@ void CP::TFitChangeHandler::ShowReconCluster(
     eigenDirs(1,1) = minorAxis.Y();
     eigenDirs(2,1) = minorAxis.Z();
 
-    CaptNamedInfo("cluster","Long Axis (" << unit::AsString(len,-1,"length") << ")"
-            << " (" << unit::AsString(longAxis.X(),-1,"direction")
-            << ", " << unit::AsString(longAxis.Y(),-1,"direction")
-            << ", " << unit::AsString(longAxis.Z(),-1,"direction") 
-            << ")"
-            << "  Extent: " << unit::AsString(extent,-1,"length"));
+    CaptNamedInfo("cluster","Long Axis (" 
+                  << unit::AsString(len,-1,"length") << ")"
+                  << " (" << unit::AsString(longAxis.X(),-1,"direction")
+                  << ", " << unit::AsString(longAxis.Y(),-1,"direction")
+                  << ", " << unit::AsString(longAxis.Z(),-1,"direction") 
+                  << ")"
+                  << "  Extent: " << unit::AsString(extent,-1,"length"));
 
-    CaptNamedInfo("cluster","Major     (" << unit::AsString(major,-1,"length") << ")"
-            << " (" << unit::AsString(majorAxis.X(),-1,"direction")
-            << ", " << unit::AsString(majorAxis.Y(),-1,"direction")
-            << ", " << unit::AsString(majorAxis.Z(),-1,"direction") 
-            << ")");
+    CaptNamedInfo("cluster","Major     (" 
+                  << unit::AsString(major,-1,"length") << ")"
+                  << " (" << unit::AsString(majorAxis.X(),-1,"direction")
+                  << ", " << unit::AsString(majorAxis.Y(),-1,"direction")
+                  << ", " << unit::AsString(majorAxis.Z(),-1,"direction") 
+                  << ")");
 
-    CaptNamedInfo("cluster","Minor     (" << unit::AsString(minor,-1,"length") << ")"
-            << " (" << unit::AsString(minorAxis.X(),-1,"direction")
-            << ", " << unit::AsString(minorAxis.Y(),-1,"direction")
-            << ", " << unit::AsString(minorAxis.Z(),-1,"direction") 
-            << ")");
-
+    CaptNamedInfo("cluster","Minor     ("
+                  << unit::AsString(minor,-1,"length") << ")"
+                  << " (" << unit::AsString(minorAxis.X(),-1,"direction")
+                  << ", " << unit::AsString(minorAxis.Y(),-1,"direction")
+                  << ", " << unit::AsString(minorAxis.Z(),-1,"direction") 
+                  << ")");
+    
     CP::TCaptLog::DecreaseIndentation();
 
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
@@ -163,8 +167,20 @@ void CP::TFitChangeHandler::ShowReconCluster(
           << "  Major Axis: " << unit::AsString(major,-1,"length")
           << "  Minor Axis: " << unit::AsString(minor,-1,"length");
     clusterShape->SetTitle(title.str().c_str());
-    
-    clusterShape->SetMainColor(kCyan-9);
+
+    int color = kCyan-9;
+    // EDeposit is in measured charge.
+    double dEdX = obj->GetEDeposit();
+    double length = obj->GetLongExtent();
+    if (length > 1*unit::mm) {
+        dEdX = dEdX/length;   // Get charge per length;
+        dEdX *= 26*unit::eV/unit::eplus; // Change the eV
+        color = TEventDisplay::Get().LogColor(dEdX,
+                                              0.1*unit::MeV/unit::mm,
+                                              6.0*unit::MeV/unit::mm);
+    }
+        
+    clusterShape->SetMainColor(color);
     clusterShape->SetMainTransparency(30);
 
     // Create the rotation matrix.
@@ -190,7 +206,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
     TGeoShape* geoShape = new TGeoEltu(major,minor,len);
     clusterShape->SetShape(geoShape);
     gGeoManager = saveGeom;
-   
+
     fFitList->AddElement(clusterShape);
     
     if (fShowFitsHits) {

@@ -66,7 +66,15 @@ void CP::TEventDisplay::Init() {
                   fPlotDigitsHits,
                   "DrawDigits(=2)");
     
-
+    // Create the color palette.
+    Double_t r[]    = {0.0, 0.0, 1.0, 1.0, 1.0};
+    Double_t g[]    = {1.0, 0.0, 1.0, 0.0, 1.0};
+    Double_t b[]    = {1.0, 1.0, 1.0, 0.0, 0.0};
+    Double_t stop[] = {0.0, .25, .50, .75, 1.0};
+    fColorCount = 200;
+    fColorBase = TColor::CreateGradientColorTable(5, stop, r, g, b, 
+                                                  fColorCount);    
+    
     CaptLog("Event display constructed");
 }
 
@@ -75,16 +83,16 @@ CP::TEventDisplay::~TEventDisplay() {
 }
 
 int CP::TEventDisplay::LinearColor(double value, double minVal, double maxVal) {
-    int nCol = TColor::GetNumberOfColors();
+    int nCol = fColorCount/2;
     int iValue = nCol*(value - minVal)/(maxVal - minVal);
     nCol = std::max(0,std::min(iValue,nCol));
-    return TColor::GetColorPalette(nCol);
+    return fColorBase + nCol;
 }
 
 int CP::TEventDisplay::LogColor(double value, double minVal, double maxVal) {
-    int nCol = TColor::GetNumberOfColors();
+    int nCol = fColorCount/2;
     value = std::max(0.0,std::min((value - minVal)/(maxVal - minVal),1.0));
     int iValue = nCol*std::log10(1.0+1000*value)/3.0;
     nCol = std::max(0,std::min(iValue,nCol));
-    return TColor::GetColorPalette(nCol);
+    return fColorBase + nCol;
 }

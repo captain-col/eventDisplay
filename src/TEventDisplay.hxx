@@ -50,6 +50,12 @@ private:
     // The digit drawing class.  This is connected directly to the buttons.
     TPlotDigitsHits* fPlotDigitsHits;
 
+    // The base color index of the palette to use.
+    int fColorBase;
+
+    // The number of colors in the palette.
+    int fColorCount;
+
 };
 
 #endif
