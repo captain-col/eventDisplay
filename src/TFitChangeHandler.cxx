@@ -176,8 +176,8 @@ void CP::TFitChangeHandler::ShowReconCluster(
         dEdX = dEdX/length;   // Get charge per length;
         dEdX *= 26*unit::eV/unit::eplus; // Change the eV
         color = TEventDisplay::Get().LogColor(dEdX,
-                                              0.1*unit::MeV/unit::mm,
-                                              6.0*unit::MeV/unit::mm);
+                                              0.2*unit::MeV/unit::mm,
+                                              10.0*unit::MeV/unit::mm);
     }
         
     clusterShape->SetMainColor(color);

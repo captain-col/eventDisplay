@@ -66,13 +66,19 @@ void CP::TEventDisplay::Init() {
                   fPlotDigitsHits,
                   "DrawDigits(=2)");
     
-    // Create the color palette.
-    Double_t r[]    = {0.0, 0.0, 1.0, 1.0, 1.0};
-    Double_t g[]    = {1.0, 0.0, 1.0, 0.0, 1.0};
-    Double_t b[]    = {1.0, 1.0, 1.0, 0.0, 0.0};
-    Double_t stop[] = {0.0, .25, .50, .75, 1.0};
+    // Create the color palette.  This is split into two halves.  The first
+    // half is from dark to white and is used for negative values on the
+    // digitization plots, as well has the reconstruction objects.  The second
+    // halve is from white to dark and is used for positive values on the
+    // digitization plot.
+    Double_t s[]  = { 0.00, 0.20, 0.35, 0.43, 0.45, 0.50, 1.00};
+    Double_t r[]  = { 0.00, 0.90, 1.00, 1.00, 1.00, 1.00, 0.00};
+    Double_t g[]  = { 0.50, 0.10, 0.75, 0.90, 1.00, 1.00, 0.00};
+    Double_t b[]  = { 0.30, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00};
     fColorCount = 200;
-    fColorBase = TColor::CreateGradientColorTable(5, stop, r, g, b, 
+    unsigned int abc = sizeof(s)/sizeof(s[0]);
+        
+    fColorBase = TColor::CreateGradientColorTable(abc, s, r, g, b, 
                                                   fColorCount);    
     
     CaptLog("Event display constructed");
@@ -91,8 +97,9 @@ int CP::TEventDisplay::LinearColor(double value, double minVal, double maxVal) {
 
 int CP::TEventDisplay::LogColor(double value, double minVal, double maxVal) {
     int nCol = fColorCount/2;
-    value = std::max(0.0,std::min((value - minVal)/(maxVal - minVal),1.0));
-    int iValue = nCol*std::log10(1.0+1000*value)/3.0;
-    nCol = std::max(0,std::min(iValue,nCol));
-    return fColorBase + nCol;
+    double nvalue = std::max(0.0,std::min((value-minVal)/(maxVal-minVal),1.0));
+    double lValue = std::log10(1.0+1000*nvalue)/3.0;
+    int iValue = nCol*lValue;
+    iValue = std::max(0,std::min(iValue,nCol));
+    return fColorBase + iValue;
 }
