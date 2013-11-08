@@ -275,6 +275,26 @@ void CP::TFitChangeHandler::ShowReconTrack(
     eveTrack->SetLineWidth(4);
 
     int p=0;
+
+    // Start at the front state of the track
+    if (state) {
+        TLorentzVector frontPos = state->GetPosition();
+        TLorentzVector frontVar = state->GetPositionVariance();
+        eveTrack->SetPoint(p++, frontPos.X(), frontPos.Y(), frontPos.Z());
+        CaptNamedInfo("nodes","Front:" 
+                      << unit::AsString(frontPos.X(),
+                                        std::sqrt(frontVar.X()),"length")
+                      <<", "<<unit::AsString(frontPos.Y(),
+                                             std::sqrt(frontVar.Y()),"length")
+                      <<", "<<unit::AsString(frontPos.Z(),
+                                             std::sqrt(frontVar.Z()),"length"));
+        CP::TCaptLog::IncreaseIndentation();
+        CaptNamedInfo("nodes",
+                      "Front Dir: " 
+                      << unit::AsString(state->GetDirection()));
+        CP::TCaptLog::DecreaseIndentation();
+    }
+
     for (CP::TReconNodeContainer::iterator n = nodes.begin();
          n != nodes.end(); ++n) {
         CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
@@ -301,6 +321,25 @@ void CP::TFitChangeHandler::ShowReconTrack(
         }
         CaptNamedInfo("nodes",
                       "Dir: " << unit::AsString(nodeState->GetDirection()));
+        CP::TCaptLog::DecreaseIndentation();
+    }
+
+    // finish at the back state of the track
+    if (backState) {
+        TLorentzVector backPos = backState->GetPosition();
+        TLorentzVector backVar = backState->GetPositionVariance();
+        eveTrack->SetPoint(p++, backPos.X(), backPos.Y(), backPos.Z());
+        CaptNamedInfo("nodes","Back:" 
+                      << unit::AsString(backPos.X(),
+                                        std::sqrt(backVar.X()),"length")
+                      <<", "<<unit::AsString(backPos.Y(),
+                                             std::sqrt(backVar.Y()),"length")
+                      <<", "<<unit::AsString(backPos.Z(),
+                                             std::sqrt(backVar.Z()),"length"));
+        CP::TCaptLog::IncreaseIndentation();
+        CaptNamedInfo("nodes",
+                      "Back Dir: " 
+                      << unit::AsString(backState->GetDirection()));
         CP::TCaptLog::DecreaseIndentation();
     }
 
