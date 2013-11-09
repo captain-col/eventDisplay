@@ -4,6 +4,7 @@
 
 #include <TCaptLog.hxx>
 #include <TG4HitSegment.hxx>
+#include <TG4Trajectory.hxx>
 #include <TEvent.hxx>
 #include <TEventFolder.hxx>
 #include <TUnitsTable.hxx>
@@ -17,9 +18,6 @@
 #include <TEveLine.h>
 
 #include <sstream>
-
-
-
 
 CP::TG4HitChangeHandler::TG4HitChangeHandler() {
     fG4HitList = new TEveElementList("g4HitList","Geant4 Truth Hits");
@@ -52,6 +50,9 @@ void CP::TG4HitChangeHandler::Apply() {
         return;
     }
 
+    CP::THandle<CP::TG4TrajectoryContainer> truthTrajectories
+        = event->Get<CP::TG4TrajectoryContainer>("truth/G4Trajectories");
+
     for (CP::TDataVector::iterator h = truthHits->begin();
          h != truthHits->end();
          ++h) {
@@ -78,13 +79,23 @@ void CP::TG4HitChangeHandler::Apply() {
             if (seg->GetTrackLength()>0.01*unit::mm) {
                 energy /= seg->GetTrackLength();
             }
-            
+
+            // Draw the hit.
             TEveLine* eveHit = new TEveLine(2);
             eveHit->SetName((*h)->GetName());
             std::ostringstream title;
-            title << "G4 Hit " << std::fixed << std::setprecision(2)
-                  << energy/(unit::MeV/unit::cm) << " MeV/cm"
-                  << " for " << unit::AsString(seg->GetTrackLength(),"length")
+            title << "G4 Hit";
+            if (truthTrajectories) {
+                int part = seg->GetContributor(0);
+                CP::THandle<CP::TG4Trajectory> traj 
+                    = truthTrajectories->GetTrajectory(part);
+                if (traj) {
+                    title << " " << traj->GetParticleName();
+                }
+            }
+            title << std::fixed << std::setprecision(2)
+                  << " " << energy/(unit::MeV/unit::cm) << " MeV/cm";
+            title << " for " << unit::AsString(seg->GetTrackLength(),"length")
                   << " at (" <<  unit::AsString(seg->GetStartX(), "length")
                   << "," <<  unit::AsString(seg->GetStartY(), "length")
                   << "," <<  unit::AsString(seg->GetStartZ(), "length") << ")";
