@@ -108,8 +108,8 @@ void CP::TFitChangeHandler::ShowReconCluster(
     TMatrixD eigenDirs(3,3);
 
     TVector3 longAxis = obj->GetLongAxis();
-    double len = longAxis.Mag();
-    double extent = obj->GetLongExtent();
+    double length = longAxis.Mag();
+    double longExtent = obj->GetLongExtent();
 
     longAxis = longAxis.Unit();
     eigenDirs(0,2) = longAxis.X();
@@ -118,6 +118,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
 
     TVector3 majorAxis = obj->GetMajorAxis();
     double major = majorAxis.Mag();
+    double majorExtent = obj->GetMajorExtent();
     majorAxis = majorAxis.Unit();
     eigenDirs(0,0) = majorAxis.X();
     eigenDirs(1,0) = majorAxis.Y();
@@ -125,18 +126,19 @@ void CP::TFitChangeHandler::ShowReconCluster(
 
     TVector3 minorAxis = obj->GetMinorAxis();
     double minor = minorAxis.Mag();
+    double minorExtent = obj->GetMinorExtent();
     minorAxis = minorAxis.Unit();
     eigenDirs(0,1) = minorAxis.X();
     eigenDirs(1,1) = minorAxis.Y();
     eigenDirs(2,1) = minorAxis.Z();
 
     CaptNamedInfo("cluster","Long Axis (" 
-                  << unit::AsString(len,-1,"length") << ")"
+                  << unit::AsString(length,-1,"length") << ")"
                   << " (" << unit::AsString(longAxis.X(),-1,"direction")
                   << ", " << unit::AsString(longAxis.Y(),-1,"direction")
                   << ", " << unit::AsString(longAxis.Z(),-1,"direction") 
                   << ")"
-                  << "  Extent: " << unit::AsString(extent,-1,"length"));
+                  << "  Extent: " << unit::AsString(longExtent,-1,"length"));
 
     CaptNamedInfo("cluster","Major     (" 
                   << unit::AsString(major,-1,"length") << ")"
@@ -163,7 +165,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
           << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
           << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
           << std::endl;
-    title << "  Long Axis: " << unit::AsString(len,-1,"length")
+    title << "  Long Axis: " << unit::AsString(length,-1,"length")
           << "  Major Axis: " << unit::AsString(major,-1,"length")
           << "  Minor Axis: " << unit::AsString(minor,-1,"length");
     clusterShape->SetTitle(title.str().c_str());
@@ -171,9 +173,8 @@ void CP::TFitChangeHandler::ShowReconCluster(
     int color = kCyan-9;
     // EDeposit is in measured charge.
     double dEdX = obj->GetEDeposit();
-    double length = obj->GetLongExtent();
-    if (length > 1*unit::mm) {
-        dEdX = dEdX/length;   // Get charge per length;
+    if (longExtent > 1*unit::mm) {
+        dEdX = dEdX/longExtent;   // Get charge per length;
         dEdX *= 26*unit::eV/unit::eplus; // Change the eV
         color = TEventDisplay::Get().LogColor(dEdX,
                                               0.2*unit::MeV/unit::mm,
@@ -181,7 +182,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
     }
         
     clusterShape->SetMainColor(color);
-    clusterShape->SetMainTransparency(30);
+    clusterShape->SetMainTransparency(60);
 
     // Create the rotation matrix.
     TGeoRotation rot;
@@ -203,7 +204,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
     // created.  You gotta love global variables...
     TGeoManager* saveGeom = gGeoManager;
     gGeoManager = clusterShape->GetGeoMangeur();
-    TGeoShape* geoShape = new TGeoEltu(major,minor,len);
+    TGeoShape* geoShape = new TGeoEltu(major,minor,longExtent);
     clusterShape->SetShape(geoShape);
     gGeoManager = saveGeom;
 
