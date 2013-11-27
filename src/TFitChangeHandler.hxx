@@ -32,22 +32,28 @@ public:
 private:
 
     /// A method to draw a TReconCluster.
-    void ShowReconCluster(const CP::THandle<CP::TReconCluster> obj);
+    int ShowReconCluster(const CP::THandle<CP::TReconCluster> obj,
+                         int index);
     
     /// A method to draw a TReconShower.
-    void ShowReconShower(const CP::THandle<CP::TReconShower> obj);
+    int ShowReconShower(const CP::THandle<CP::TReconShower> obj,
+                        int index);
 
     /// A method to draw a TReconTrack.
-    void ShowReconTrack(const CP::THandle<CP::TReconTrack> obj);
+    int ShowReconTrack(const CP::THandle<CP::TReconTrack> obj,
+                       int index);
 
     /// A method to draw a TReconPID
-    void ShowReconPID(const CP::THandle<CP::TReconPID> obj);
+    int ShowReconPID(const CP::THandle<CP::TReconPID> obj,
+                     int index);
 
     /// A method to draw a TReconVertex
-    void ShowReconVertex(const CP::THandle<CP::TReconVertex> obj);
+    int ShowReconVertex(const CP::THandle<CP::TReconVertex> obj,
+                        int index);
 
     /// A method to draw a TReconObjectContainer
-    void ShowReconObjects(const CP::THandle<CP::TReconObjectContainer> obj);
+    int ShowReconObjects(const CP::THandle<CP::TReconObjectContainer> obj,
+                         int index = 0);
 
     /// The reconstruction objects to draw in the event.
     TEveElementList* fFitList;

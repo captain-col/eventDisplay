@@ -73,28 +73,33 @@ void CP::TFitChangeHandler::Apply() {
     // Iterate through the list of selected entries.
     TIter next(&selected);
     TGLBEntry* lbEntry;
+    int index = 0;
     while ((lbEntry = (TGLBEntry*) next())) {
         std::string objName(lbEntry->GetTitle());
         CP::THandle<CP::TReconObjectContainer> objects 
             = event->Get<CP::TReconObjectContainer>(objName.c_str());
-        ShowReconObjects(objects);
+        index = ShowReconObjects(objects,index);
     }
 
 }
 
-void CP::TFitChangeHandler::ShowReconCluster(
-    CP::THandle<CP::TReconCluster> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconCluster(
+    CP::THandle<CP::TReconCluster> obj,
+    int index) {
+    if (!obj) return index;
 
     CP::THandle<CP::TClusterState> state = obj->GetState();
     if (!state) {
         CaptError("TClusterState missing!");
-        return;
+        return index;
     }
     TLorentzVector var = state->GetPositionVariance();
     TLorentzVector pos = state->GetPosition();
 
-    CaptNamedInfo("cluster","Cluster @ " 
+    // Increment the index to get a new value for the names.
+    ++index;
+
+    CaptNamedInfo("cluster","Cluster(" << index << ") @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
@@ -157,10 +162,14 @@ void CP::TFitChangeHandler::ShowReconCluster(
     CP::TCaptLog::DecreaseIndentation();
 
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
-    
+
+    std::ostringstream objName;
+    objName << "cluster(" << index << ")";
+    clusterShape->SetName(objName.str().c_str());
+
     // Set the cluster title.
     std::ostringstream title;
-    title << "Cluster @ ";
+    title << "Cluster(" << index << ") @ ";
     title << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
           << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
           << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
@@ -216,32 +225,38 @@ void CP::TFitChangeHandler::ShowReconCluster(
         showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
     }
 
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconShower(
-    CP::THandle<CP::TReconShower> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconShower(
+    CP::THandle<CP::TReconShower> obj,
+    int index) {
+    if (!obj) return index;
     CaptError("ShowReconShower not Implemented");
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconTrack(
-    CP::THandle<CP::TReconTrack> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconTrack(
+    CP::THandle<CP::TReconTrack> obj,
+    int index) {
+    if (!obj) return index;
 
     CP::THandle<CP::TTrackState> state = obj->GetState();
     if (!state) {
         CaptError("TTrackState missing!");
-        return;
+        return index;
     }
     TLorentzVector pos = state->GetPosition();
     TLorentzVector var = state->GetPositionVariance();
     TVector3 dir = state->GetDirection().Unit();
     TVector3 dvar = state->GetDirectionVariance();
 
+    // Get a new index
+    ++index;
+
     // This is used as the annotation, so it needs to be better.
     std::ostringstream title;
-
-    title << "Track @ " 
+    title << "Track(" << index << ") @ " 
           << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
           <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
           <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
@@ -284,12 +299,15 @@ void CP::TFitChangeHandler::ShowReconTrack(
     CP::TCaptLog::IncreaseIndentation();
     
     TEveLine* eveTrack = new TEveLine(nodes.size());
-    eveTrack->SetName(obj->GetName()); 
+
+    std::ostringstream objName;
+    objName << obj->GetName() << "(" << index << ")";
+    eveTrack->SetName(objName.str().c_str()); 
 
     eveTrack->SetTitle(title.str().c_str());
     eveTrack->SetLineColor(kBlue);
-    eveTrack->SetLineStyle(7);
-    eveTrack->SetLineWidth(4);
+    eveTrack->SetLineStyle(1);
+    eveTrack->SetLineWidth(1);
 
     int p=0;
 
@@ -369,27 +387,33 @@ void CP::TFitChangeHandler::ShowReconTrack(
     }
 
     CP::TCaptLog::DecreaseIndentation();
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconPID(
-    CP::THandle<CP::TReconPID> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconPID(
+    CP::THandle<CP::TReconPID> obj, 
+    int index) {
+    if (!obj) return index;
     CaptError("ShowReconPID not Implemented");
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconVertex(
-    CP::THandle<CP::TReconVertex> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconVertex(
+    CP::THandle<CP::TReconVertex> obj,
+    int index) {
+    if (!obj) return index;
 
     CP::THandle<CP::TVertexState> state = obj->GetState();
     if (!state) {
         CaptError("TVertexState missing!");
-        return;
+        return index;
     }
     TLorentzVector pos = state->GetPosition();
     TLorentzVector var = state->GetPositionVariance();
 
-    CaptLog("Vertex @ " 
+    ++index;
+
+    CaptLog("Vertex(" << index << ") @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
@@ -400,46 +424,49 @@ void CP::TFitChangeHandler::ShowReconVertex(
         CP::TCaptLog::IncreaseIndentation();
         CaptLog("Constituent objects: " << constituents->size());
         CP::TCaptLog::IncreaseIndentation();
-        ShowReconObjects(constituents);
+        index = ShowReconObjects(constituents,index);
         CP::TCaptLog::DecreaseIndentation();
         CP::TCaptLog::DecreaseIndentation();
     }
 
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconObjects(
-    CP::THandle<CP::TReconObjectContainer> objects) {
-    if (!objects) return;
-    CaptLog("Show Objects in " << objects->GetName());
+int CP::TFitChangeHandler::ShowReconObjects(
+    CP::THandle<CP::TReconObjectContainer> objects,
+    int index) {
+    if (!objects) return index;
+    CaptLog("Show " << objects->size() << " objects in " << objects->GetName());
     CP::TCaptLog::IncreaseIndentation();
     for (CP::TReconObjectContainer::iterator obj = objects->begin();
          obj != objects->end(); ++obj) {
         CP::THandle<CP::TReconCluster> cluster = *obj;
         if (cluster) {
-            ShowReconCluster(cluster);
+            index = ShowReconCluster(cluster, index);
             continue;
         }
         CP::THandle<CP::TReconShower> shower = *obj;
         if (shower) {
-            ShowReconShower(shower);
+            index = ShowReconShower(shower, index);
             continue;
         }
         CP::THandle<CP::TReconTrack> track = *obj;
         if (track) {
-            ShowReconTrack(track);
+            index = ShowReconTrack(track, index);
             continue;
         }
         CP::THandle<CP::TReconPID> pid = *obj;
         if (pid) {
-            ShowReconPID(pid);
+            index = ShowReconPID(pid, index);
             continue;
         }
         CP::THandle<CP::TReconVertex> vertex = *obj;
         if (vertex) {
-            ShowReconVertex(vertex);
+            index = ShowReconVertex(vertex, index);
             continue;
         }
 
     }
     CP::TCaptLog::DecreaseIndentation();
+    return index;
 }
