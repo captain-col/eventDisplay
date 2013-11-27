@@ -10,8 +10,10 @@
 #include <TUnitsTable.hxx>
 #include <HEPUnits.hxx>
 #include <THandle.hxx>
+#include <TGeomIdManager.hxx>
+#include <TManager.hxx>
+#include <CaptGeomId.hxx>
 
-#include <TGeoManager.h>
 #include <TGButton.h>
 
 #include <TEveManager.h>
@@ -21,7 +23,7 @@
 
 CP::TG4HitChangeHandler::TG4HitChangeHandler() {
     fG4HitList = new TEveElementList("g4HitList","Geant4 Truth Hits");
-    fG4HitList->SetMainColor(kYellow);
+    fG4HitList->SetMainColor(kCyan);
     fG4HitList->SetMainAlpha(1.0);
     gEve->AddElement(fG4HitList);
 }
@@ -103,9 +105,21 @@ void CP::TG4HitChangeHandler::Apply() {
             eveHit->SetTitle(title.str().c_str());
             double minEnergy = 0.1*unit::MeV;
             double maxEnergy = 20.0*unit::MeV;
-            eveHit->SetLineColor(TEventDisplay::Get().LogColor(energy,
-                                                               minEnergy,
-                                                               maxEnergy));
+
+            TGeometryId id;
+            if (CP::TManager::Get().GeomId().GetGeometryId(
+                    seg->GetStartX(),seg->GetStartY(),seg->GetStartZ(), id)) {
+                if (id == CP::GeomId::Captain::Drift()) {
+                    eveHit->SetLineColor(TEventDisplay::Get().LogColor(
+                                             energy,
+                                             minEnergy,
+                                             maxEnergy));
+                }
+                else {
+                    eveHit->SetLineColor(kCyan);
+                }
+            }
+
             eveHit->SetPoint(0,
                              seg->GetStartX(),
                              seg->GetStartY(),
