@@ -256,43 +256,51 @@ int CP::TFitChangeHandler::ShowReconTrack(
 
     // This is used as the annotation, so it needs to be better.
     std::ostringstream title;
-    title << "Track(" << index << ") @ " 
+    title << "Track(" << index << ") --" 
+          << " Nodes: " << obj->GetNodes().size()
+          << ",  Energy Deposit: " << obj->GetEDeposit()
+          << std::endl
+          << "   Position:  (" 
           << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
-          <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
-          <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
-          << std::endl;
-
-    title << "   Direction: (" 
+          << ", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+          << ", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
+          << ")";
+    
+    title << std::endl
+          << "   Direction: (" 
           << unit::AsString(dir.X(), dvar.X(),"direction")
           << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
           << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
-          << ")"
-          << std::endl;
+          << ")";
     
-    title << "   Algorithm: " << obj->GetAlgorithmName() 
-          << std::endl;
-    
+    title << std::endl 
+          << "   Algorithm: " << obj->GetAlgorithmName();
+
     CP::THandle<CP::TTrackState> backState = obj->GetBack();
     if (backState) {
         TLorentzVector v = backState->GetPositionVariance();
-        if (v.Mag() < 10000) {
-            TLorentzVector p = backState->GetPosition();
-            TVector3 d = backState->GetDirection().Unit();
-            TVector3 dv = backState->GetDirectionVariance();
-            title << "      Back Pos:  " 
-                  << unit::AsString(p.X(),std::sqrt(v.X()),"length")
-                  <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
-                  <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length")
-                  << std::endl;
-            title << "      Back Dir: (" 
-                  << unit::AsString(d.X(), dv.X(),"direction")
-                  << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
-                  << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
-                  << ")";
-        }
+        TLorentzVector p = backState->GetPosition();
+        TVector3 d = backState->GetDirection().Unit();
+        TVector3 dv = backState->GetDirectionVariance();
+        title << std::endl
+              << "   Back Pos:  " 
+              << unit::AsString(p.X(),std::sqrt(v.X()),"length")
+              <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
+              <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length")
+              << std::endl;
+        title << std::endl
+              << "   Back Dir: (" 
+              << unit::AsString(d.X(), dv.X(),"direction")
+              << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
+              << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
+              << ")";
+    }
+    else {
+        title << std::endl
+              << "      BACK STATE IS MISSING";
     }
 
-    CaptNamedInfo("track",title.str());
+    CaptNamedLog("track",title.str());
 
     CP::TReconNodeContainer& nodes = obj->GetNodes();
     CaptNamedInfo("nodes", "Track Nodes " << nodes.size());
@@ -307,7 +315,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
     eveTrack->SetTitle(title.str().c_str());
     eveTrack->SetLineColor(kBlue);
     eveTrack->SetLineStyle(1);
-    eveTrack->SetLineWidth(1);
+    eveTrack->SetLineWidth(2);
 
     int p=0;
 
