@@ -274,7 +274,9 @@ int CP::TFitChangeHandler::ShowReconTrack(
           << ")";
     
     title << std::endl 
-          << "   Algorithm: " << obj->GetAlgorithmName();
+          << "   Algorithm: " << obj->GetAlgorithmName()
+          << " w/ goodness: " << obj->GetQuality()
+          << "/" << obj->GetNDOF();
 
     CP::THandle<CP::TTrackState> backState = obj->GetBack();
     if (backState) {
@@ -286,8 +288,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
               << "   Back Pos:  " 
               << unit::AsString(p.X(),std::sqrt(v.X()),"length")
               <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
-              <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length")
-              << std::endl;
+              <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length");
         title << std::endl
               << "   Back Dir: (" 
               << unit::AsString(d.X(), dv.X(),"direction")
