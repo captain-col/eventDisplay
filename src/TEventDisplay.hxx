@@ -29,7 +29,7 @@ public:
     int LinearColor(double val, double minVal, double maxVal);
 
     /// Get a color from the palette using a logarithmic value scale.
-    int LogColor(double val, double minVal, double maxVal);
+    int LogColor(double val, double minVal, double maxVal, double magScale=5.0);
 
 private:
     // Prevent direct construction.
