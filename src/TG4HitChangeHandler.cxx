@@ -55,6 +55,9 @@ void CP::TG4HitChangeHandler::Apply() {
     CP::THandle<CP::TG4TrajectoryContainer> truthTrajectories
         = event->Get<CP::TG4TrajectoryContainer>("truth/G4Trajectories");
 
+    double minEnergy = 0.18*unit::MeV/unit::mm;
+    double maxEnergy = 3.0*unit::MeV/unit::mm;
+
     for (CP::TDataVector::iterator h = truthHits->begin();
          h != truthHits->end();
          ++h) {
@@ -113,14 +116,13 @@ void CP::TG4HitChangeHandler::Apply() {
                   << "," <<  unit::AsString(seg->GetStartZ(), "length") << ")";
 
             eveHit->SetTitle(title.str().c_str());
-            double minEnergy = 0.1*unit::MeV/unit::mm;
-            double maxEnergy = 20.0*unit::MeV/unit::mm;
 
             if (validId && id==CP::GeomId::Captain::Drift()) {
                 eveHit->SetLineColor(TEventDisplay::Get().LogColor(
                                          dEdX,
                                          minEnergy,
-                                         maxEnergy));
+                                         maxEnergy,
+                                         3));
             }
             else {
                 eveHit->SetLineColor(kCyan);

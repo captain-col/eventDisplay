@@ -88,6 +88,9 @@ int CP::TFitChangeHandler::ShowReconCluster(
     int index) {
     if (!obj) return index;
 
+    double minEnergy = 0.18*unit::MeV/unit::mm;
+    double maxEnergy = 3.0*unit::MeV/unit::mm;
+
     CP::THandle<CP::TClusterState> state = obj->GetState();
     if (!state) {
         CaptError("TClusterState missing!");
@@ -186,8 +189,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
     if (longExtent > 1*unit::mm) {
         dEdX /= 2.0*longExtent;              // Get charge per length;
         color = TEventDisplay::Get().LogColor(dEdX,
-                                              0.2*unit::MeV/unit::mm,
-                                              4.0*unit::MeV/unit::mm);
+                                              minEnergy,maxEnergy,2.0);
     }
     title << std::endl
           << "  Energy Deposit: " << unit::AsString(energy,-1,"energy")
@@ -195,7 +197,9 @@ int CP::TFitChangeHandler::ShowReconCluster(
         
     clusterShape->SetTitle(title.str().c_str());
     clusterShape->SetMainColor(color);
-    clusterShape->SetMainTransparency(60);
+    bool transparentClusters = true;
+    if (transparentClusters) clusterShape->SetMainTransparency(60);
+    else clusterShape->SetMainTransparency(0);
 
     // Create the rotation matrix.
     TGeoRotation rot;
