@@ -113,8 +113,8 @@ void CP::TG4HitChangeHandler::Apply() {
                   << "," <<  unit::AsString(seg->GetStartZ(), "length") << ")";
 
             eveHit->SetTitle(title.str().c_str());
-            double minEnergy = 0.1*unit::MeV;
-            double maxEnergy = 20.0*unit::MeV;
+            double minEnergy = 0.1*unit::MeV/unit::mm;
+            double maxEnergy = 20.0*unit::MeV/unit::mm;
 
             if (validId && id==CP::GeomId::Captain::Drift()) {
                 eveHit->SetLineColor(TEventDisplay::Get().LogColor(
