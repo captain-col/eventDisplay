@@ -167,29 +167,33 @@ int CP::TFitChangeHandler::ShowReconCluster(
     objName << "cluster(" << index << ")";
     clusterShape->SetName(objName.str().c_str());
 
-    // Set the cluster title.
+    // Build the cluster title.
     std::ostringstream title;
     title << "Cluster(" << index << ") @ ";
     title << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
           << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
-          << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
-          << std::endl;
-    title << "  Long Axis: " << unit::AsString(length,-1,"length")
+          << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length");
+    title << std::endl
+          << "  Long Axis: " << unit::AsString(length,-1,"length")
           << "  Major Axis: " << unit::AsString(major,-1,"length")
           << "  Minor Axis: " << unit::AsString(minor,-1,"length");
-    clusterShape->SetTitle(title.str().c_str());
 
     int color = kCyan-9;
     // EDeposit is in measured charge.
-    double dEdX = obj->GetEDeposit();
+    double energy = obj->GetEDeposit();
+    energy *= 26*unit::eV/unit::eplus; // Change the eV
+    double dEdX = energy;
     if (longExtent > 1*unit::mm) {
-        dEdX = dEdX/longExtent;   // Get charge per length;
-        dEdX *= 26*unit::eV/unit::eplus; // Change the eV
+        dEdX /= 2.0*longExtent;              // Get charge per length;
         color = TEventDisplay::Get().LogColor(dEdX,
                                               0.2*unit::MeV/unit::mm,
-                                              10.0*unit::MeV/unit::mm);
+                                              4.0*unit::MeV/unit::mm);
     }
+    title << std::endl
+          << "  Energy Deposit: " << unit::AsString(energy,-1,"energy")
+          << "  dEdX (per cm) " << unit::AsString(dEdX*unit::cm,-1,"energy");
         
+    clusterShape->SetTitle(title.str().c_str());
     clusterShape->SetMainColor(color);
     clusterShape->SetMainTransparency(60);
 
