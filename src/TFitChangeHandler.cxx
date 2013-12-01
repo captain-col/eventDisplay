@@ -8,6 +8,7 @@
 #include <TEventFolder.hxx>
 #include <HEPUnits.hxx>
 #include <THandle.hxx>
+#include <TRuntimeParameters.hxx>
 #include <TUnitsTable.hxx>
 
 #include <TGeoManager.h>
@@ -38,6 +39,10 @@ CP::TFitChangeHandler::TFitChangeHandler() {
     fFitList->SetMainColor(kGreen);
     fFitList->SetMainAlpha(0.5);
     gEve->AddElement(fFitList);
+
+    fEnergyPerCharge
+        = CP::TRuntimeParameters::Get().GetParameterD(
+            "eventDisplay.fits.energyPerCharge");
 }
 
 CP::TFitChangeHandler::~TFitChangeHandler() {
@@ -184,7 +189,8 @@ int CP::TFitChangeHandler::ShowReconCluster(
     int color = kCyan-9;
     // EDeposit is in measured charge.
     double energy = obj->GetEDeposit();
-    energy *= 26*unit::eV/unit::eplus; // Change the eV
+    // A rough conversion to energy.
+    energy *= fEnergyPerCharge*unit::eV/unit::eplus; 
     double dEdX = energy;
     if (longExtent > 1*unit::mm) {
         dEdX /= 2.0*longExtent;              // Get charge per length;

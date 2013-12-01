@@ -6,3 +6,8 @@ value in the databases, and is used to plot hits versus digits.
 Define the offset from zero used in the calibration.
 
 < eventDisplay.digitization.offset = 0 ns >
+
+Define the rough conversion between charge and energy.  The units are
+energy per charge in eV/(collected electron).
+
+< eventDisplay.fits.energyPerCharge = 60 >
