@@ -106,6 +106,9 @@ void CP::TG4HitChangeHandler::Apply() {
                     = truthTrajectories->GetTrajectory(part);
                 if (traj) {
                     title << " " << traj->GetParticleName();
+                    title << " (" << 
+                        unit::AsString(traj->GetInitialMomentum().P(),
+                                       "momentum") << ")";
                 }
             }
             title << std::fixed << std::setprecision(2)
