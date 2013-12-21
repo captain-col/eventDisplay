@@ -14,6 +14,7 @@
 #include <TGeoManager.h>
 #include <TGeoShape.h>
 #include <TGeoEltu.h>
+#include <TGeoSphere.h>
 #include <TGeoMatrix.h>
 
 #include <TVectorF.h>
@@ -131,7 +132,6 @@ int CP::TFitChangeHandler::ShowReconCluster(
 
     TVector3 majorAxis = obj->GetMajorAxis();
     double major = majorAxis.Mag();
-    double majorExtent = obj->GetMajorExtent();
     majorAxis = majorAxis.Unit();
     eigenDirs(0,0) = majorAxis.X();
     eigenDirs(1,0) = majorAxis.Y();
@@ -139,7 +139,6 @@ int CP::TFitChangeHandler::ShowReconCluster(
 
     TVector3 minorAxis = obj->GetMinorAxis();
     double minor = minorAxis.Mag();
-    double minorExtent = obj->GetMinorExtent();
     minorAxis = minorAxis.Unit();
     eigenDirs(0,1) = minorAxis.X();
     eigenDirs(1,1) = minorAxis.Y();
@@ -246,7 +245,124 @@ int CP::TFitChangeHandler::ShowReconShower(
     CP::THandle<CP::TReconShower> obj,
     int index) {
     if (!obj) return index;
-    CaptError("ShowReconShower not Implemented");
+
+    CP::THandle<CP::TShowerState> state = obj->GetState();
+    if (!state) {
+        CaptError("TShowerState missing!");
+        return index;
+    }
+    TLorentzVector pos = state->GetPosition();
+    TLorentzVector var = state->GetPositionVariance();
+    TVector3 dir = state->GetDirection().Unit();
+    TVector3 dvar = state->GetDirectionVariance();
+
+    // Get a new index
+    ++index;
+
+    // This is used as the annotation, so it needs to be better.
+    std::ostringstream title;
+    title << "Shower(" << index << ") --" 
+          << " Nodes: " << obj->GetNodes().size()
+          << ",  Energy Deposit: " << obj->GetEDeposit()
+          << std::endl
+          << "   Position:  (" 
+          << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+          << ", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+          << ", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
+          << ")";
+    
+    title << std::endl
+          << "   Direction: (" 
+          << unit::AsString(dir.X(), dvar.X(),"direction")
+          << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
+          << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
+          << ")";
+    
+    title << std::endl 
+          << "   Algorithm: " << obj->GetAlgorithmName()
+          << " w/ goodness: " << obj->GetQuality()
+          << "/" << obj->GetNDOF();
+
+    CaptNamedLog("shower",title.str());
+
+    CP::TReconNodeContainer& nodes = obj->GetNodes();
+    CaptNamedInfo("nodes", "Shower Nodes " << nodes.size());
+    CP::TCaptLog::IncreaseIndentation();
+    
+    TEveElementList *eveShower = new TEveElementList();
+    eveShower->SetMainColor(kRed);
+    std::ostringstream objName;
+    objName << obj->GetName() << "(" << index << ")";
+    eveShower->SetName(objName.str().c_str());
+    eveShower->SetTitle(title.str().c_str());
+
+    TEveLine* showerLine = new TEveLine(nodes.size());
+    showerLine->SetName(objName.str().c_str()); 
+    showerLine->SetTitle(title.str().c_str());
+    showerLine->SetLineColor(kRed);
+    showerLine->SetLineStyle(1);
+    showerLine->SetLineWidth(2);
+
+    int p=0;
+
+    // Start at the front state of the shower
+    if (state) {
+        TLorentzVector frontPos = state->GetPosition();
+        TLorentzVector frontVar = state->GetPositionVariance();
+        showerLine->SetPoint(p++, frontPos.X(), frontPos.Y(), frontPos.Z());
+        CaptNamedInfo("nodes","Front:" 
+                      << unit::AsString(frontPos.X(),
+                                        std::sqrt(frontVar.X()),"length")
+                      <<", "<<unit::AsString(frontPos.Y(),
+                                             std::sqrt(frontVar.Y()),"length")
+                      <<", "<<unit::AsString(frontPos.Z(),
+                                             std::sqrt(frontVar.Z()),"length"));
+        CP::TCaptLog::IncreaseIndentation();
+        CaptNamedInfo("nodes",
+                      "Front Dir: " 
+                      << unit::AsString(state->GetDirection()));
+        CP::TCaptLog::DecreaseIndentation();
+    }
+
+    // Draw the line down the center of the shower.
+    for (CP::TReconNodeContainer::iterator n = nodes.begin();
+         n != nodes.end(); ++n) {
+        CP::THandle<CP::TShowerState> nodeState = (*n)->GetState();
+        if (!nodeState) continue;
+        TLorentzVector nodePos = nodeState->GetPosition();
+        showerLine->SetPoint(p++, nodePos.X(), nodePos.Y(), nodePos.Z());
+    }
+
+    eveShower->AddElement(showerLine);
+
+    // Draw spheres at the nodes.
+    for (CP::TReconNodeContainer::iterator n = nodes.begin();
+         n != nodes.end(); ++n) {
+        CP::THandle<CP::TShowerState> nodeState = (*n)->GetState();
+        if (!nodeState) continue;
+        TLorentzVector nodePos = nodeState->GetPosition();
+        double nodeWidth = nodeState->GetCone();
+        TEveGeoShape *nodeShape = new TEveGeoShape("showerNode");
+        nodeShape->SetName(objName.str().c_str());
+        nodeShape->SetTitle(title.str().c_str());
+        nodeShape->SetMainColor(kRed);
+        // Set the translation
+        TGeoTranslation trans(nodeState->GetPosition().X(),
+                              nodeState->GetPosition().Y(),
+                              nodeState->GetPosition().Z());
+        nodeShape->SetTransMatrix(trans);
+        TGeoManager* saveGeom = gGeoManager;
+        gGeoManager = nodeShape->GetGeoMangeur();
+        TGeoShape* geoShape = new TGeoSphere(0.0, nodeWidth);
+        nodeShape->SetShape(geoShape);
+        gGeoManager = saveGeom;
+        eveShower->AddElement(nodeShape);
+    }
+
+    fFitList->AddElement(eveShower);
+
+    CP::TCaptLog::DecreaseIndentation();
+
     return index;
 }
 
