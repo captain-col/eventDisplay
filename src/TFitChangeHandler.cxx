@@ -226,7 +226,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
     // created.  You gotta love global variables...
     TGeoManager* saveGeom = gGeoManager;
     gGeoManager = clusterShape->GetGeoMangeur();
-    TGeoShape* geoShape = new TGeoEltu(major,minor,longExtent);
+    TGeoShape* geoShape = new TGeoEltu(major,minor,std::max(length,longExtent));
     clusterShape->SetShape(geoShape);
     gGeoManager = saveGeom;
 
