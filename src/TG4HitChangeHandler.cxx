@@ -55,6 +55,9 @@ void CP::TG4HitChangeHandler::Apply() {
     CP::THandle<CP::TG4TrajectoryContainer> truthTrajectories
         = event->Get<CP::TG4TrajectoryContainer>("truth/G4Trajectories");
 
+    double minEnergy = 0.18*unit::MeV/unit::mm;
+    double maxEnergy = 3.0*unit::MeV/unit::mm;
+
     for (CP::TDataVector::iterator h = truthHits->begin();
          h != truthHits->end();
          ++h) {
@@ -78,11 +81,21 @@ void CP::TG4HitChangeHandler::Apply() {
             }
 
             double energy = seg->GetEnergyDeposit();
-            if (seg->GetTrackLength()>0.01*unit::mm) {
-                energy /= seg->GetTrackLength();
-            }
+            double length = seg->GetTrackLength();
+            double dEdX = energy;
+            if (length>0.01*unit::mm) dEdX /= length;
 
-            // Draw the hit.
+            TGeometryId id;
+            bool validId 
+                = CP::TManager::Get().GeomId().GetGeometryId(
+                    seg->GetStartX(),seg->GetStartY(),seg->GetStartZ(), id);
+
+            // If the hit is outside of drift, only plot the long ones.
+            if (validId 
+                && id!=CP::GeomId::Captain::Drift() 
+                && length < 2*unit::mm) continue;
+
+            
             TEveLine* eveHit = new TEveLine(2);
             eveHit->SetName((*h)->GetName());
             std::ostringstream title;
@@ -93,31 +106,29 @@ void CP::TG4HitChangeHandler::Apply() {
                     = truthTrajectories->GetTrajectory(part);
                 if (traj) {
                     title << " " << traj->GetParticleName();
+                    title << " (" << 
+                        unit::AsString(traj->GetInitialMomentum().P(),
+                                       "momentum") << ")";
                 }
             }
             title << std::fixed << std::setprecision(2)
-                  << " " << energy/(unit::MeV/unit::cm) << " MeV/cm";
-            title << " for " << unit::AsString(seg->GetTrackLength(),"length")
+                  << " " << dEdX/(unit::MeV/unit::cm) << " MeV/cm";
+            title << " for " << unit::AsString(length,"length")
                   << " at (" <<  unit::AsString(seg->GetStartX(), "length")
                   << "," <<  unit::AsString(seg->GetStartY(), "length")
                   << "," <<  unit::AsString(seg->GetStartZ(), "length") << ")";
 
             eveHit->SetTitle(title.str().c_str());
-            double minEnergy = 0.1*unit::MeV;
-            double maxEnergy = 20.0*unit::MeV;
 
-            TGeometryId id;
-            if (CP::TManager::Get().GeomId().GetGeometryId(
-                    seg->GetStartX(),seg->GetStartY(),seg->GetStartZ(), id)) {
-                if (id == CP::GeomId::Captain::Drift()) {
-                    eveHit->SetLineColor(TEventDisplay::Get().LogColor(
-                                             energy,
-                                             minEnergy,
-                                             maxEnergy));
-                }
-                else {
-                    eveHit->SetLineColor(kCyan);
-                }
+            if (validId && id==CP::GeomId::Captain::Drift()) {
+                eveHit->SetLineColor(TEventDisplay::Get().LogColor(
+                                         dEdX,
+                                         minEnergy,
+                                         maxEnergy,
+                                         3));
+            }
+            else {
+                eveHit->SetLineColor(kCyan);
             }
 
             eveHit->SetPoint(0,

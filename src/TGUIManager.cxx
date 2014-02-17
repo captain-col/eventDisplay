@@ -62,6 +62,17 @@ void CP::TGUIManager::MakeControlTab() {
 
     // Create the buttons to select which types of objects are showed.
     TGCheckButton *checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show Recon Objects");
+    checkButton->SetToolTipText(
+        "Show the reconstructed objects.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    checkButton->SetOn();
+    hf->AddFrame(checkButton, layoutHints);
+    fShowFitsButton = checkButton;
+
     checkButton = new TGCheckButton(hf,"Show Trajectories");
     checkButton->SetToolTipText(
         "Show the GEANT4 trajectories and trajectory points.");
@@ -79,17 +90,7 @@ void CP::TGUIManager::MakeControlTab() {
     checkButton->SetMargins(0,0,0,0);
     checkButton->SetWrapLength(-1);
     hf->AddFrame(checkButton, layoutHints);
-    checkButton->SetOn();
     fShowG4HitsButton = checkButton;
-
-    checkButton = new TGCheckButton(hf,"Show Recon Objects");
-    checkButton->SetToolTipText(
-        "Show the reconstructed objects.");
-    checkButton->SetTextJustify(36);
-    checkButton->SetMargins(0,0,0,0);
-    checkButton->SetWrapLength(-1);
-    hf->AddFrame(checkButton, layoutHints);
-    fShowFitsButton = checkButton;
 
     checkButton = new TGCheckButton(hf,"Show Recon Objects Hits");
     checkButton->SetToolTipText(

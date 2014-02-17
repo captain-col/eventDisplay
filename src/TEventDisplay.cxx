@@ -95,11 +95,13 @@ int CP::TEventDisplay::LinearColor(double value, double minVal, double maxVal) {
     return fColorBase + nCol;
 }
 
-int CP::TEventDisplay::LogColor(double value, double minVal, double maxVal) {
+int CP::TEventDisplay::LogColor(double value, double minVal, double maxVal,
+    double magScale) {
     int nCol = fColorCount/2;
+    double scale = std::pow(10.0,magScale);
     double nvalue = std::max(0.0,std::min((value-minVal)/(maxVal-minVal),1.0));
-    double lValue = std::log10(1.0+1000*nvalue)/3.0;
+    double lValue = std::log10(1.0+scale*nvalue)/magScale;
     int iValue = nCol*lValue;
-    iValue = std::max(0,std::min(iValue,nCol));
+    iValue = std::max(0,std::min(iValue,nCol-1));
     return fColorBase + iValue;
 }

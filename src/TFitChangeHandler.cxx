@@ -8,11 +8,13 @@
 #include <TEventFolder.hxx>
 #include <HEPUnits.hxx>
 #include <THandle.hxx>
+#include <TRuntimeParameters.hxx>
 #include <TUnitsTable.hxx>
 
 #include <TGeoManager.h>
 #include <TGeoShape.h>
 #include <TGeoEltu.h>
+#include <TGeoSphere.h>
 #include <TGeoMatrix.h>
 
 #include <TVectorF.h>
@@ -38,6 +40,10 @@ CP::TFitChangeHandler::TFitChangeHandler() {
     fFitList->SetMainColor(kGreen);
     fFitList->SetMainAlpha(0.5);
     gEve->AddElement(fFitList);
+
+    fEnergyPerCharge
+        = CP::TRuntimeParameters::Get().GetParameterD(
+            "eventDisplay.fits.energyPerCharge");
 }
 
 CP::TFitChangeHandler::~TFitChangeHandler() {
@@ -73,28 +79,36 @@ void CP::TFitChangeHandler::Apply() {
     // Iterate through the list of selected entries.
     TIter next(&selected);
     TGLBEntry* lbEntry;
+    int index = 0;
     while ((lbEntry = (TGLBEntry*) next())) {
         std::string objName(lbEntry->GetTitle());
         CP::THandle<CP::TReconObjectContainer> objects 
             = event->Get<CP::TReconObjectContainer>(objName.c_str());
-        ShowReconObjects(objects);
+        index = ShowReconObjects(objects,index);
     }
 
 }
 
-void CP::TFitChangeHandler::ShowReconCluster(
-    CP::THandle<CP::TReconCluster> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconCluster(
+    CP::THandle<CP::TReconCluster> obj,
+    int index) {
+    if (!obj) return index;
+
+    double minEnergy = 0.18*unit::MeV/unit::mm;
+    double maxEnergy = 3.0*unit::MeV/unit::mm;
 
     CP::THandle<CP::TClusterState> state = obj->GetState();
     if (!state) {
         CaptError("TClusterState missing!");
-        return;
+        return index;
     }
     TLorentzVector var = state->GetPositionVariance();
     TLorentzVector pos = state->GetPosition();
 
-    CaptNamedInfo("cluster","Cluster @ " 
+    // Increment the index to get a new value for the names.
+    ++index;
+
+    CaptNamedInfo("cluster","Cluster(" << index << ") @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
@@ -118,7 +132,6 @@ void CP::TFitChangeHandler::ShowReconCluster(
 
     TVector3 majorAxis = obj->GetMajorAxis();
     double major = majorAxis.Mag();
-    double majorExtent = obj->GetMajorExtent();
     majorAxis = majorAxis.Unit();
     eigenDirs(0,0) = majorAxis.X();
     eigenDirs(1,0) = majorAxis.Y();
@@ -126,7 +139,6 @@ void CP::TFitChangeHandler::ShowReconCluster(
 
     TVector3 minorAxis = obj->GetMinorAxis();
     double minor = minorAxis.Mag();
-    double minorExtent = obj->GetMinorExtent();
     minorAxis = minorAxis.Unit();
     eigenDirs(0,1) = minorAxis.X();
     eigenDirs(1,1) = minorAxis.Y();
@@ -157,32 +169,42 @@ void CP::TFitChangeHandler::ShowReconCluster(
     CP::TCaptLog::DecreaseIndentation();
 
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
-    
-    // Set the cluster title.
+
+    std::ostringstream objName;
+    objName << "cluster(" << index << ")";
+    clusterShape->SetName(objName.str().c_str());
+
+    // Build the cluster title.
     std::ostringstream title;
-    title << "Cluster @ ";
+    title << "Cluster(" << index << ") @ ";
     title << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
           << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
-          << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
-          << std::endl;
-    title << "  Long Axis: " << unit::AsString(length,-1,"length")
+          << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length");
+    title << std::endl
+          << "  Long Axis: " << unit::AsString(length,-1,"length")
           << "  Major Axis: " << unit::AsString(major,-1,"length")
           << "  Minor Axis: " << unit::AsString(minor,-1,"length");
-    clusterShape->SetTitle(title.str().c_str());
 
     int color = kCyan-9;
     // EDeposit is in measured charge.
-    double dEdX = obj->GetEDeposit();
+    double energy = obj->GetEDeposit();
+    // A rough conversion to energy.
+    energy *= fEnergyPerCharge*unit::eV/unit::eplus; 
+    double dEdX = energy;
     if (longExtent > 1*unit::mm) {
-        dEdX = dEdX/longExtent;   // Get charge per length;
-        dEdX *= 26*unit::eV/unit::eplus; // Change to eV
+        dEdX /= 2.0*longExtent;              // Get charge per length;
         color = TEventDisplay::Get().LogColor(dEdX,
-                                              0.2*unit::MeV/unit::mm,
-                                              10.0*unit::MeV/unit::mm);
+                                              minEnergy,maxEnergy,2.0);
     }
+    title << std::endl
+          << "  Energy Deposit: " << unit::AsString(energy,-1,"energy")
+          << "  dEdX (per cm) " << unit::AsString(dEdX*unit::cm,-1,"energy");
         
+    clusterShape->SetTitle(title.str().c_str());
     clusterShape->SetMainColor(color);
-    clusterShape->SetMainTransparency(60);
+    bool transparentClusters = true;
+    if (transparentClusters) clusterShape->SetMainTransparency(60);
+    else clusterShape->SetMainTransparency(0);
 
     // Create the rotation matrix.
     TGeoRotation rot;
@@ -204,7 +226,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
     // created.  You gotta love global variables...
     TGeoManager* saveGeom = gGeoManager;
     gGeoManager = clusterShape->GetGeoMangeur();
-    TGeoShape* geoShape = new TGeoEltu(major,minor,longExtent);
+    TGeoShape* geoShape = new TGeoEltu(major,minor,std::max(length,longExtent));
     clusterShape->SetShape(geoShape);
     gGeoManager = saveGeom;
 
@@ -216,80 +238,215 @@ void CP::TFitChangeHandler::ShowReconCluster(
         showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
     }
 
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconShower(
-    CP::THandle<CP::TReconShower> obj) {
-    if (!obj) return;
-    CaptError("ShowReconShower not Implemented");
-}
+int CP::TFitChangeHandler::ShowReconShower(
+    CP::THandle<CP::TReconShower> obj,
+    int index) {
+    if (!obj) return index;
 
-void CP::TFitChangeHandler::ShowReconTrack(
-    CP::THandle<CP::TReconTrack> obj) {
-    if (!obj) return;
-
-    CP::THandle<CP::TTrackState> state = obj->GetState();
+    CP::THandle<CP::TShowerState> state = obj->GetState();
     if (!state) {
-        CaptError("TTrackState missing!");
-        return;
+        CaptError("TShowerState missing!");
+        return index;
     }
     TLorentzVector pos = state->GetPosition();
     TLorentzVector var = state->GetPositionVariance();
     TVector3 dir = state->GetDirection().Unit();
     TVector3 dvar = state->GetDirectionVariance();
 
+    // Get a new index
+    ++index;
+
     // This is used as the annotation, so it needs to be better.
     std::ostringstream title;
-
-    title << "Track @ " 
+    title << "Shower(" << index << ") --" 
+          << " Nodes: " << obj->GetNodes().size()
+          << ",  Energy Deposit: " << obj->GetEDeposit()
+          << std::endl
+          << "   Position:  (" 
           << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
-          <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
-          <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
-          << std::endl;
-
-    title << "   Direction: (" 
+          << ", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+          << ", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
+          << ")";
+    
+    title << std::endl
+          << "   Direction: (" 
           << unit::AsString(dir.X(), dvar.X(),"direction")
           << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
           << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
-          << ")"
-          << std::endl;
+          << ")";
     
-    title << "   Algorithm: " << obj->GetAlgorithmName() 
-          << std::endl;
+    title << std::endl 
+          << "   Algorithm: " << obj->GetAlgorithmName()
+          << " w/ goodness: " << obj->GetQuality()
+          << "/" << obj->GetNDOF();
+
+    CaptNamedLog("shower",title.str());
+
+    CP::TReconNodeContainer& nodes = obj->GetNodes();
+    CaptNamedInfo("nodes", "Shower Nodes " << nodes.size());
+    CP::TCaptLog::IncreaseIndentation();
     
+    TEveElementList *eveShower = new TEveElementList();
+    eveShower->SetMainColor(kRed);
+    std::ostringstream objName;
+    objName << obj->GetName() << "(" << index << ")";
+    eveShower->SetName(objName.str().c_str());
+    eveShower->SetTitle(title.str().c_str());
+
+    TEveLine* showerLine = new TEveLine(nodes.size());
+    showerLine->SetName(objName.str().c_str()); 
+    showerLine->SetTitle(title.str().c_str());
+    showerLine->SetLineColor(kRed);
+    showerLine->SetLineStyle(1);
+    showerLine->SetLineWidth(2);
+
+    int p=0;
+
+    // Start at the front state of the shower
+    if (state) {
+        TLorentzVector frontPos = state->GetPosition();
+        TLorentzVector frontVar = state->GetPositionVariance();
+        showerLine->SetPoint(p++, frontPos.X(), frontPos.Y(), frontPos.Z());
+        CaptNamedInfo("nodes","Front:" 
+                      << unit::AsString(frontPos.X(),
+                                        std::sqrt(frontVar.X()),"length")
+                      <<", "<<unit::AsString(frontPos.Y(),
+                                             std::sqrt(frontVar.Y()),"length")
+                      <<", "<<unit::AsString(frontPos.Z(),
+                                             std::sqrt(frontVar.Z()),"length"));
+        CP::TCaptLog::IncreaseIndentation();
+        CaptNamedInfo("nodes",
+                      "Front Dir: " 
+                      << unit::AsString(state->GetDirection()));
+        CP::TCaptLog::DecreaseIndentation();
+    }
+
+    // Draw the line down the center of the shower.
+    for (CP::TReconNodeContainer::iterator n = nodes.begin();
+         n != nodes.end(); ++n) {
+        CP::THandle<CP::TShowerState> nodeState = (*n)->GetState();
+        if (!nodeState) continue;
+        TLorentzVector nodePos = nodeState->GetPosition();
+        showerLine->SetPoint(p++, nodePos.X(), nodePos.Y(), nodePos.Z());
+    }
+
+    eveShower->AddElement(showerLine);
+
+    // Draw spheres at the nodes.
+    for (CP::TReconNodeContainer::iterator n = nodes.begin();
+         n != nodes.end(); ++n) {
+        CP::THandle<CP::TShowerState> nodeState = (*n)->GetState();
+        if (!nodeState) continue;
+        TLorentzVector nodePos = nodeState->GetPosition();
+        double nodeWidth = nodeState->GetCone();
+        TEveGeoShape *nodeShape = new TEveGeoShape("showerNode");
+        nodeShape->SetName(objName.str().c_str());
+        nodeShape->SetTitle(title.str().c_str());
+        nodeShape->SetMainColor(kRed);
+        // Set the translation
+        TGeoTranslation trans(nodeState->GetPosition().X(),
+                              nodeState->GetPosition().Y(),
+                              nodeState->GetPosition().Z());
+        nodeShape->SetTransMatrix(trans);
+        TGeoManager* saveGeom = gGeoManager;
+        gGeoManager = nodeShape->GetGeoMangeur();
+        TGeoShape* geoShape = new TGeoSphere(0.0, nodeWidth);
+        nodeShape->SetShape(geoShape);
+        gGeoManager = saveGeom;
+        eveShower->AddElement(nodeShape);
+    }
+
+    fFitList->AddElement(eveShower);
+
+    CP::TCaptLog::DecreaseIndentation();
+
+    return index;
+}
+
+int CP::TFitChangeHandler::ShowReconTrack(
+    CP::THandle<CP::TReconTrack> obj,
+    int index) {
+    if (!obj) return index;
+
+    CP::THandle<CP::TTrackState> state = obj->GetState();
+    if (!state) {
+        CaptError("TTrackState missing!");
+        return index;
+    }
+    TLorentzVector pos = state->GetPosition();
+    TLorentzVector var = state->GetPositionVariance();
+    TVector3 dir = state->GetDirection().Unit();
+    TVector3 dvar = state->GetDirectionVariance();
+
+    // Get a new index
+    ++index;
+
+    // This is used as the annotation, so it needs to be better.
+    std::ostringstream title;
+    title << "Track(" << index << ") --" 
+          << " Nodes: " << obj->GetNodes().size()
+          << ",  Energy Deposit: " << obj->GetEDeposit()
+          << std::endl
+          << "   Position:  (" 
+          << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
+          << ", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
+          << ", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length")
+          << ")";
+    
+    title << std::endl
+          << "   Direction: (" 
+          << unit::AsString(dir.X(), dvar.X(),"direction")
+          << ", " << unit::AsString(dir.Y(), dvar.Y(),"direction")
+          << ", " << unit::AsString(dir.Z(), dvar.Z(),"direction")
+          << ")";
+    
+    title << std::endl 
+          << "   Algorithm: " << obj->GetAlgorithmName()
+          << " w/ goodness: " << obj->GetQuality()
+          << "/" << obj->GetNDOF();
+
     CP::THandle<CP::TTrackState> backState = obj->GetBack();
     if (backState) {
         TLorentzVector v = backState->GetPositionVariance();
-        if (v.Mag() < 10000) {
-            TLorentzVector p = backState->GetPosition();
-            TVector3 d = backState->GetDirection().Unit();
-            TVector3 dv = backState->GetDirectionVariance();
-            title << "      Back Pos:  " 
-                  << unit::AsString(p.X(),std::sqrt(v.X()),"length")
-                  <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
-                  <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length")
-                  << std::endl;
-            title << "      Back Dir: (" 
-                  << unit::AsString(d.X(), dv.X(),"direction")
-                  << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
-                  << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
-                  << ")";
-        }
+        TLorentzVector p = backState->GetPosition();
+        TVector3 d = backState->GetDirection().Unit();
+        TVector3 dv = backState->GetDirectionVariance();
+        title << std::endl
+              << "   Back Pos:  " 
+              << unit::AsString(p.X(),std::sqrt(v.X()),"length")
+              <<", "<<unit::AsString(p.Y(),std::sqrt(v.Y()),"length")
+              <<", "<<unit::AsString(p.Z(),std::sqrt(v.Z()),"length");
+        title << std::endl
+              << "   Back Dir: (" 
+              << unit::AsString(d.X(), dv.X(),"direction")
+              << ", " << unit::AsString(d.Y(), dv.Y(),"direction")
+              << ", " << unit::AsString(d.Z(), dv.Z(),"direction")
+              << ")";
+    }
+    else {
+        title << std::endl
+              << "      BACK STATE IS MISSING";
     }
 
-    CaptNamedInfo("track",title.str());
+    CaptNamedLog("track",title.str());
 
     CP::TReconNodeContainer& nodes = obj->GetNodes();
     CaptNamedInfo("nodes", "Track Nodes " << nodes.size());
     CP::TCaptLog::IncreaseIndentation();
     
     TEveLine* eveTrack = new TEveLine(nodes.size());
-    eveTrack->SetName(obj->GetName()); 
+
+    std::ostringstream objName;
+    objName << obj->GetName() << "(" << index << ")";
+    eveTrack->SetName(objName.str().c_str()); 
 
     eveTrack->SetTitle(title.str().c_str());
     eveTrack->SetLineColor(kBlue);
-    eveTrack->SetLineStyle(7);
-    eveTrack->SetLineWidth(4);
+    eveTrack->SetLineStyle(1);
+    eveTrack->SetLineWidth(2);
 
     int p=0;
 
@@ -369,27 +526,33 @@ void CP::TFitChangeHandler::ShowReconTrack(
     }
 
     CP::TCaptLog::DecreaseIndentation();
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconPID(
-    CP::THandle<CP::TReconPID> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconPID(
+    CP::THandle<CP::TReconPID> obj, 
+    int index) {
+    if (!obj) return index;
     CaptError("ShowReconPID not Implemented");
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconVertex(
-    CP::THandle<CP::TReconVertex> obj) {
-    if (!obj) return;
+int CP::TFitChangeHandler::ShowReconVertex(
+    CP::THandle<CP::TReconVertex> obj,
+    int index) {
+    if (!obj) return index;
 
     CP::THandle<CP::TVertexState> state = obj->GetState();
     if (!state) {
         CaptError("TVertexState missing!");
-        return;
+        return index;
     }
     TLorentzVector pos = state->GetPosition();
     TLorentzVector var = state->GetPositionVariance();
 
-    CaptLog("Vertex @ " 
+    ++index;
+
+    CaptLog("Vertex(" << index << ") @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
@@ -400,46 +563,49 @@ void CP::TFitChangeHandler::ShowReconVertex(
         CP::TCaptLog::IncreaseIndentation();
         CaptLog("Constituent objects: " << constituents->size());
         CP::TCaptLog::IncreaseIndentation();
-        ShowReconObjects(constituents);
+        index = ShowReconObjects(constituents,index);
         CP::TCaptLog::DecreaseIndentation();
         CP::TCaptLog::DecreaseIndentation();
     }
 
+    return index;
 }
 
-void CP::TFitChangeHandler::ShowReconObjects(
-    CP::THandle<CP::TReconObjectContainer> objects) {
-    if (!objects) return;
-    CaptLog("Show Objects in " << objects->GetName());
+int CP::TFitChangeHandler::ShowReconObjects(
+    CP::THandle<CP::TReconObjectContainer> objects,
+    int index) {
+    if (!objects) return index;
+    CaptLog("Show " << objects->size() << " objects in " << objects->GetName());
     CP::TCaptLog::IncreaseIndentation();
     for (CP::TReconObjectContainer::iterator obj = objects->begin();
          obj != objects->end(); ++obj) {
         CP::THandle<CP::TReconCluster> cluster = *obj;
         if (cluster) {
-            ShowReconCluster(cluster);
+            index = ShowReconCluster(cluster, index);
             continue;
         }
         CP::THandle<CP::TReconShower> shower = *obj;
         if (shower) {
-            ShowReconShower(shower);
+            index = ShowReconShower(shower, index);
             continue;
         }
         CP::THandle<CP::TReconTrack> track = *obj;
         if (track) {
-            ShowReconTrack(track);
+            index = ShowReconTrack(track, index);
             continue;
         }
         CP::THandle<CP::TReconPID> pid = *obj;
         if (pid) {
-            ShowReconPID(pid);
+            index = ShowReconPID(pid, index);
             continue;
         }
         CP::THandle<CP::TReconVertex> vertex = *obj;
         if (vertex) {
-            ShowReconVertex(vertex);
+            index = ShowReconVertex(vertex, index);
             continue;
         }
 
     }
     CP::TCaptLog::DecreaseIndentation();
+    return index;
 }
