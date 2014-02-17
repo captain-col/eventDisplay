@@ -175,7 +175,7 @@ void CP::TFitChangeHandler::ShowReconCluster(
     double dEdX = obj->GetEDeposit();
     if (longExtent > 1*unit::mm) {
         dEdX = dEdX/longExtent;   // Get charge per length;
-        dEdX *= 26*unit::eV/unit::eplus; // Change the eV
+        dEdX *= 26*unit::eV/unit::eplus; // Change to eV
         color = TEventDisplay::Get().LogColor(dEdX,
                                               0.2*unit::MeV/unit::mm,
                                               10.0*unit::MeV/unit::mm);
