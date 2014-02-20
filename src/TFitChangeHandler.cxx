@@ -108,7 +108,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
     // Increment the index to get a new value for the names.
     ++index;
 
-    CaptNamedInfo("cluster","Cluster(" << index << ") @ " 
+    CaptNamedInfo("cluster","Cluster(" << obj->GetUniqueID() << ") @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
@@ -171,12 +171,12 @@ int CP::TFitChangeHandler::ShowReconCluster(
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
 
     std::ostringstream objName;
-    objName << "cluster(" << index << ")";
+    objName << "cluster(" << obj->GetUniqueID() << ")";
     clusterShape->SetName(objName.str().c_str());
 
     // Build the cluster title.
     std::ostringstream title;
-    title << "Cluster(" << index << ") @ ";
+    title << "Cluster(" << obj->GetUniqueID() << ") @ ";
     title << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
           << ", " << unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
           << ", " << unit::AsString(pos.Z(),std::sqrt(var.Z()),"length");
@@ -189,7 +189,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
     // EDeposit is in measured charge.
     double energy = obj->GetEDeposit();
     // A rough conversion to energy.
-    energy *= fEnergyPerCharge*unit::eV/unit::eplus; 
+    energy *= fEnergyPerCharge;
     double dEdX = energy;
     if (longExtent > 1*unit::mm) {
         dEdX /= 2.0*longExtent;              // Get charge per length;
@@ -261,7 +261,7 @@ int CP::TFitChangeHandler::ShowReconShower(
 
     // This is used as the annotation, so it needs to be better.
     std::ostringstream title;
-    title << "Shower(" << index << ") --" 
+    title << "Shower(" << obj->GetUniqueID() << ") --" 
           << " Nodes: " << obj->GetNodes().size()
           << ",  Energy Deposit: " << obj->GetEDeposit()
           << std::endl
@@ -281,7 +281,7 @@ int CP::TFitChangeHandler::ShowReconShower(
     title << std::endl 
           << "   Algorithm: " << obj->GetAlgorithmName()
           << " w/ goodness: " << obj->GetQuality()
-          << "/" << obj->GetNDOF();
+          << " / " << obj->GetNDOF();
 
     CaptNamedLog("shower",title.str());
 
@@ -292,7 +292,7 @@ int CP::TFitChangeHandler::ShowReconShower(
     TEveElementList *eveShower = new TEveElementList();
     eveShower->SetMainColor(kRed);
     std::ostringstream objName;
-    objName << obj->GetName() << "(" << index << ")";
+    objName << obj->GetName() << "(" << obj->GetUniqueID() << ")";
     eveShower->SetName(objName.str().c_str());
     eveShower->SetTitle(title.str().c_str());
 
@@ -386,7 +386,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
 
     // This is used as the annotation, so it needs to be better.
     std::ostringstream title;
-    title << "Track(" << index << ") --" 
+    title << "Track(" << obj->GetUniqueID() << ") --" 
           << " Nodes: " << obj->GetNodes().size()
           << ",  Energy Deposit: " << obj->GetEDeposit()
           << std::endl
@@ -406,7 +406,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
     title << std::endl 
           << "   Algorithm: " << obj->GetAlgorithmName()
           << " w/ goodness: " << obj->GetQuality()
-          << "/" << obj->GetNDOF();
+          << " / " << obj->GetNDOF();
 
     CP::THandle<CP::TTrackState> backState = obj->GetBack();
     if (backState) {
@@ -440,7 +440,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
     TEveLine* eveTrack = new TEveLine(nodes.size());
 
     std::ostringstream objName;
-    objName << obj->GetName() << "(" << index << ")";
+    objName << obj->GetName() << "(" << obj->GetUniqueID() << ")";
     eveTrack->SetName(objName.str().c_str()); 
 
     eveTrack->SetTitle(title.str().c_str());
@@ -552,7 +552,7 @@ int CP::TFitChangeHandler::ShowReconVertex(
 
     ++index;
 
-    CaptLog("Vertex(" << index << ") @ " 
+    CaptLog("Vertex(" << obj->GetUniqueID() << ") @ " 
             << unit::AsString(pos.X(),std::sqrt(var.X()),"length")
             <<", "<<unit::AsString(pos.Y(),std::sqrt(var.Y()),"length")
             <<", "<<unit::AsString(pos.Z(),std::sqrt(var.Z()),"length"));
