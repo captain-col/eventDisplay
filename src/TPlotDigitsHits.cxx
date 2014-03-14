@@ -12,12 +12,16 @@
 #include <TMCChannelId.hxx>
 #include <TRuntimeParameters.hxx>
 
+#include <TChannelInfo.hxx>
+#include <TGeometryInfo.hxx>
+
 #include <TCanvas.h>
 #include <TPad.h>
 #include <TH2F.h>
 #include <TColor.h>
 #include <TPolyLine.h>
 #include <TMarker.h>
+#include <TROOT.h>
 
 #include <cmath>
 #include <algorithm>
@@ -86,7 +90,7 @@ CP::TPlotDigitsHits::TPlotDigitsHits()
 
 CP::TPlotDigitsHits::~TPlotDigitsHits() {}
 
-void CP::TPlotDigitsHits::DrawDigits(int projection) {
+void CP::TPlotDigitsHits::DrawDigits(int plane) {
 
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
 
@@ -120,6 +124,9 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         return;
     }
 
+
+    // Find the Z axis range for the histogram.  The median sample s the
+    // middle.  The max is the "biggest" distance from the medial.
     std::vector<double> samples;
     for (CP::TDigitContainer::const_iterator d = drift->begin();
          d != drift->end(); ++d) {
@@ -135,8 +142,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     maxSample = std::max(maxSample,
                          std::abs(samples[0.01*samples.size()]-medianSample));
 
-    std::cout << "Max Sample " << maxSample << std::endl;
-
+    // Find the time axis range based on the times of the bins with a signal.
     std::vector<double> times;
     double digitSampleTime = 1;
     for (CP::TDigitContainer::const_iterator d = drift->begin();
@@ -159,14 +165,16 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     double signalEnd = times[0.99*times.size()];
     int signalBins = (signalEnd-signalStart)/digitSampleTime;
 
+    // Connect to the histogram to show.
     TH2F* digitPlot = NULL;
-
-    switch (projection) {
+    int wireCount = CP::TGeometryInfo::Get().GetWireCount(plane);
+    
+    switch (plane) {
     case 0:
         if (fXPlaneHist) delete fXPlaneHist;
         fXPlaneHist = digitPlot
             = new TH2F("xPlane", "Charge on the X wires",
-                       660, 0, 660,
+                       wireCount, 0, wireCount,
                        signalBins, signalStart, signalEnd);
         if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
         else digitPlot->SetYTitle("Sample Number");
@@ -176,7 +184,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         if (fVPlaneHist) delete fVPlaneHist;
         fVPlaneHist = digitPlot
             = new TH2F("vPlane", "Charge on the V wires",
-                       660, 0, 660,
+                       wireCount, 0, wireCount,
                        signalBins, signalStart, signalEnd);
         if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
         else digitPlot->SetYTitle("Sample Number");
@@ -187,7 +195,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
         if (fUPlaneHist) delete fUPlaneHist;
         fUPlaneHist = digitPlot
             = new TH2F("uPlane", "Charge on the U wires",
-                       660, 0, 660,
+                       wireCount, 0, wireCount,
                        signalBins, signalStart, signalEnd);
         if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
         else digitPlot->SetYTitle("Sample Number");
@@ -202,13 +210,12 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
             = dynamic_cast<const CP::TDigit*>(*d);
         if (!digit) continue;
         double wire = -1;
-        // Figure out if this is in the right projection, and get the wire
+        // Figure out if this is in the right plane, and get the wire
         // number.
-        if (digit->GetChannelId().IsMCChannel()) {
-            CP::TMCChannelId mc(digit->GetChannelId());
-            wire = mc.GetNumber()+0.5;
-            if (mc.GetSequence() != (unsigned) projection) continue;
-        }
+        CP::TGeometryId id 
+            = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
+        if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+        wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
         for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
             double tbin = GetDigitFirstTime(digit) 
                 + GetDigitSampleTime(digit)*i;
@@ -221,6 +228,26 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     maxVal= std::min(maxVal,10000.0);
 
     CaptLog("Maximum Value " << maxVal);
+
+    TCanvas* canvas = NULL;
+    switch (plane) {
+    case 0: canvas = (TCanvas*) gROOT->FindObject("canvasXDigits"); break;
+    case 1: canvas = (TCanvas*) gROOT->FindObject("canvasVDigits"); break;
+    case 2: canvas = (TCanvas*) gROOT->FindObject("canvasUDigits"); break;
+    default: CaptError("Invalid canvas plane " << plane);
+    }
+
+    if (!canvas) {
+        std::cout << "CREATE A NEW DIGIT CANVAS" << std::endl;
+        switch (plane) {
+        case 0: canvas=new TCanvas("canvasXDigits","X Digits",500,300); break;
+        case 1: canvas=new TCanvas("canvasVDigits","V Digits",500,300); break;
+        case 2: canvas=new TCanvas("canvasUDigits","U Digits",500,300); break;
+        default: CaptError("Invalid canvas plane " << plane);
+        }
+    }
+
+    canvas->cd();
 
     digitPlot->SetMinimum(-maxVal);
     digitPlot->SetMaximum(maxVal+1);
@@ -248,7 +275,7 @@ void CP::TPlotDigitsHits::DrawDigits(int projection) {
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         TGeometryId id = (*h)->GetGeomId();
-        if (CP::GeomId::Captain::GetWirePlane(id) != projection) continue;
+        if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
         // The wire number (offset for the middle of the bin).
         double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
         // The hit time.
