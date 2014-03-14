@@ -8,6 +8,7 @@
 #include <CaptGeomId.hxx>
 #include <TManager.hxx>
 #include <TGeomIdManager.hxx>
+#include <TChannelInfo.hxx>
 
 #include <TQObject.h>
 #include <TGButton.h>
@@ -169,6 +170,9 @@ void CP::TEventChangeManager::NewEvent() {
     }
 
     CaptLog("Event: " << event->GetContext());
+
+    // Let the database handlers know about the new event context.
+    CP::TChannelInfo::Get().SetContext(event->GetContext());
 
     // Run through all of the handlers.
     for (Handlers::iterator h = fNewEventHandlers.begin();

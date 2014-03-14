@@ -9,6 +9,7 @@ author Clark McGrew <clark.mcgrew@stonybrook.edu>
 # The packages used by this one.  Only direct dependencies should be
 # included. 
 use captEvent
+use captChanInfo
 use testBase
 use captainPolicy 
 use ROOT * LCG_Interfaces
