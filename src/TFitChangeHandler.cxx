@@ -91,7 +91,8 @@ void CP::TFitChangeHandler::Apply() {
 
 int CP::TFitChangeHandler::ShowReconCluster(
     CP::THandle<CP::TReconCluster> obj,
-    int index) {
+    int index,
+    bool showHits) {
     if (!obj) return index;
 
     double minEnergy = 0.18*unit::MeV/unit::mm;
@@ -118,31 +119,20 @@ int CP::TFitChangeHandler::ShowReconCluster(
     CaptNamedInfo("cluster","Time " 
                   << unit::AsString(pos.T(),std::sqrt(var.T()),"time"));
 
-    // Find the orientation of the cluster from the eigen vectors.
-    TMatrixD eigenDirs(3,3);
 
     TVector3 longAxis = obj->GetLongAxis();
     double length = longAxis.Mag();
     double longExtent = obj->GetLongExtent();
 
     longAxis = longAxis.Unit();
-    eigenDirs(0,2) = longAxis.X();
-    eigenDirs(1,2) = longAxis.Y();
-    eigenDirs(2,2) = longAxis.Z();
 
     TVector3 majorAxis = obj->GetMajorAxis();
     double major = majorAxis.Mag();
     majorAxis = majorAxis.Unit();
-    eigenDirs(0,0) = majorAxis.X();
-    eigenDirs(1,0) = majorAxis.Y();
-    eigenDirs(2,0) = majorAxis.Z();
 
     TVector3 minorAxis = obj->GetMinorAxis();
     double minor = minorAxis.Mag();
     minorAxis = minorAxis.Unit();
-    eigenDirs(0,1) = minorAxis.X();
-    eigenDirs(1,1) = minorAxis.Y();
-    eigenDirs(2,1) = minorAxis.Z();
 
     CaptNamedInfo("cluster","Long Axis (" 
                   << unit::AsString(length,-1,"length") << ")"
@@ -167,6 +157,54 @@ int CP::TFitChangeHandler::ShowReconCluster(
                   << ")");
     
     CP::TCaptLog::DecreaseIndentation();
+
+    // Find the rotation of the object to be displayed.  A cluster is
+    // represented as a tube with the long axis along the local Z direction,
+    // and the major and minor in the XY plane.
+    TMatrixD tubeRot(3,3);
+    double tubeMajor;
+    double tubeMinor;
+    double tubeLong;
+    if (CP::TEventDisplay::Get().GUI().
+        GetShowClusterUncertaintyButton()->IsOn()) {
+        for (int i=0; i<3; ++i) {
+            for (int j=0; j<3; ++j) {
+                tubeRot(i,j) = state->GetPositionCovariance(i,j);
+            }
+        }
+        TVectorD values(3);
+        TMatrixD tubeEigen(tubeRot.EigenVectors(values));
+        tubeMajor = std::sqrt(values(1));
+        tubeRot(0,0) = tubeEigen(0,1);
+        tubeRot(1,0) = tubeEigen(1,1);
+        tubeRot(2,0) = tubeEigen(2,1);
+        tubeMinor = std::sqrt(values(2));
+        tubeRot(0,1) = tubeEigen(0,2);
+        tubeRot(1,1) = tubeEigen(1,2);
+        tubeRot(2,1) = tubeEigen(2,2);
+        tubeLong = std::sqrt(values(0));
+        tubeRot(0,2) = tubeEigen(0,0);
+        tubeRot(1,2) = tubeEigen(1,0);
+        tubeRot(2,2) = tubeEigen(2,0);
+    }
+    else {
+        tubeMajor = major;
+        tubeRot(0,0) = majorAxis.X();
+        tubeRot(1,0) = majorAxis.Y();
+        tubeRot(2,0) = majorAxis.Z();
+        tubeMinor = minor;
+        tubeRot(0,1) = minorAxis.X();
+        tubeRot(1,1) = minorAxis.Y();
+        tubeRot(2,1) = minorAxis.Z();
+        tubeLong = std::max(length,longExtent);
+        tubeRot(0,2) = longAxis.X();
+        tubeRot(1,2) = longAxis.Y();
+        tubeRot(2,2) = longAxis.Z();
+    }
+
+    ///////////////////////////////////////////
+    // Fill the object to be drawn.
+    ///////////////////////////////////////////
 
     TEveGeoShape *clusterShape = new TEveGeoShape("cluster");
 
@@ -208,7 +246,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
 
     // Create the rotation matrix.
     TGeoRotation rot;
-    rot.SetMatrix(eigenDirs.GetMatrixArray());
+    rot.SetMatrix(tubeRot.GetMatrixArray());
 
     // Set the translation
     TGeoTranslation trans(obj->GetPosition().X(),
@@ -219,6 +257,11 @@ int CP::TFitChangeHandler::ShowReconCluster(
     TGeoCombiTrans rotTrans(trans,rot);
     clusterShape->SetTransMatrix(rotTrans);
 
+    // Make sure the tube size doesn't get too small.
+    tubeLong = std::max(1.0*unit::mm, tubeLong);
+    tubeMajor = std::max(1.0*unit::mm, tubeMajor);
+    tubeMinor = std::max(1.0*unit::mm, tubeMinor);
+    
     // Create the shape to display.  This has to play some fancy footsie to
     // get the gGeoManager memory management right.  It first saves the
     // current manager, then gets an internal geometry manager used by
@@ -226,13 +269,13 @@ int CP::TFitChangeHandler::ShowReconCluster(
     // created.  You gotta love global variables...
     TGeoManager* saveGeom = gGeoManager;
     gGeoManager = clusterShape->GetGeoMangeur();
-    TGeoShape* geoShape = new TGeoEltu(major,minor,std::max(length,longExtent));
+    TGeoShape* geoShape = new TGeoEltu(tubeMajor,tubeMinor,tubeLong);
     clusterShape->SetShape(geoShape);
     gGeoManager = saveGeom;
 
     fFitList->AddElement(clusterShape);
     
-    if (fShowFitsHits) {
+    if (fShowFitsHits && showHits) {
         // Draw the hits.
         CP::TShowDriftHits showDrift;
         showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
@@ -243,7 +286,8 @@ int CP::TFitChangeHandler::ShowReconCluster(
 
 int CP::TFitChangeHandler::ShowReconShower(
     CP::THandle<CP::TReconShower> obj,
-    int index) {
+    int index,
+    bool showHits) {
     if (!obj) return index;
 
     CP::THandle<CP::TShowerState> state = obj->GetState();
@@ -361,6 +405,12 @@ int CP::TFitChangeHandler::ShowReconShower(
 
     fFitList->AddElement(eveShower);
 
+    // Draw the clusters.
+    for (CP::TReconNodeContainer::iterator n = nodes.begin();
+         n != nodes.end(); ++n) {
+        index = ShowReconObject((*n)->GetObject(),index, false);
+    }
+
     CP::TCaptLog::DecreaseIndentation();
 
     return index;
@@ -368,7 +418,8 @@ int CP::TFitChangeHandler::ShowReconShower(
 
 int CP::TFitChangeHandler::ShowReconTrack(
     CP::THandle<CP::TReconTrack> obj,
-    int index) {
+    int index,
+    bool showHits) {
     if (!obj) return index;
 
     CP::THandle<CP::TTrackState> state = obj->GetState();
@@ -519,7 +570,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
 
     fFitList->AddElement(eveTrack);
 
-    if (fShowFitsHits) {
+    if (fShowFitsHits && showHits) {
         // Draw the hits.
         CP::TShowDriftHits showDrift;
         showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
@@ -531,7 +582,8 @@ int CP::TFitChangeHandler::ShowReconTrack(
 
 int CP::TFitChangeHandler::ShowReconPID(
     CP::THandle<CP::TReconPID> obj, 
-    int index) {
+    int index,
+    bool showHits) {
     if (!obj) return index;
     CaptError("ShowReconPID not Implemented");
     return index;
@@ -539,7 +591,8 @@ int CP::TFitChangeHandler::ShowReconPID(
 
 int CP::TFitChangeHandler::ShowReconVertex(
     CP::THandle<CP::TReconVertex> obj,
-    int index) {
+    int index,
+    bool showHits) {
     if (!obj) return index;
 
     CP::THandle<CP::TVertexState> state = obj->GetState();
@@ -571,6 +624,38 @@ int CP::TFitChangeHandler::ShowReconVertex(
     return index;
 }
 
+int CP::TFitChangeHandler::ShowReconObject(CP::THandle<CP::TReconBase> obj,
+                                           int index,
+                                           bool showHits) {
+    if (!obj) return index;
+    CP::THandle<CP::TReconCluster> cluster = obj;
+    if (cluster) {
+        index = ShowReconCluster(cluster, index, showHits);
+        return index;
+    }
+    CP::THandle<CP::TReconShower> shower = obj;
+    if (shower) {
+        index = ShowReconShower(shower, index, showHits);
+        return index;
+    }
+    CP::THandle<CP::TReconTrack> track = obj;
+    if (track) {
+        index = ShowReconTrack(track, index, showHits);
+        return index;
+    }
+    CP::THandle<CP::TReconPID> pid = obj;
+    if (pid) {
+        index = ShowReconPID(pid, index, showHits);
+        return index;
+    }
+    CP::THandle<CP::TReconVertex> vertex = obj;
+    if (vertex) {
+        index = ShowReconVertex(vertex, index, showHits);
+        return index;
+    }
+    return index;
+}
+
 int CP::TFitChangeHandler::ShowReconObjects(
     CP::THandle<CP::TReconObjectContainer> objects,
     int index) {
@@ -579,32 +664,7 @@ int CP::TFitChangeHandler::ShowReconObjects(
     CP::TCaptLog::IncreaseIndentation();
     for (CP::TReconObjectContainer::iterator obj = objects->begin();
          obj != objects->end(); ++obj) {
-        CP::THandle<CP::TReconCluster> cluster = *obj;
-        if (cluster) {
-            index = ShowReconCluster(cluster, index);
-            continue;
-        }
-        CP::THandle<CP::TReconShower> shower = *obj;
-        if (shower) {
-            index = ShowReconShower(shower, index);
-            continue;
-        }
-        CP::THandle<CP::TReconTrack> track = *obj;
-        if (track) {
-            index = ShowReconTrack(track, index);
-            continue;
-        }
-        CP::THandle<CP::TReconPID> pid = *obj;
-        if (pid) {
-            index = ShowReconPID(pid, index);
-            continue;
-        }
-        CP::THandle<CP::TReconVertex> vertex = *obj;
-        if (vertex) {
-            index = ShowReconVertex(vertex, index);
-            continue;
-        }
-
+        index = ShowReconObject(*obj, index);
     }
     CP::TCaptLog::DecreaseIndentation();
     return index;

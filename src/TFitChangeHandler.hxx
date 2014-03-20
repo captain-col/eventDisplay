@@ -33,23 +33,33 @@ private:
 
     /// A method to draw a TReconCluster.
     int ShowReconCluster(const CP::THandle<CP::TReconCluster> obj,
-                         int index);
+                         int index,
+                         bool showHits = true);
     
     /// A method to draw a TReconShower.
     int ShowReconShower(const CP::THandle<CP::TReconShower> obj,
-                        int index);
+                        int index,
+                        bool showHits = true);
 
     /// A method to draw a TReconTrack.
     int ShowReconTrack(const CP::THandle<CP::TReconTrack> obj,
-                       int index);
+                       int index,
+                       bool showHits = true);
 
     /// A method to draw a TReconPID
     int ShowReconPID(const CP::THandle<CP::TReconPID> obj,
-                     int index);
+                     int index,
+                     bool showHits = true);
 
     /// A method to draw a TReconVertex
     int ShowReconVertex(const CP::THandle<CP::TReconVertex> obj,
-                        int index);
+                        int index,
+                        bool showHits = true);
+
+    /// A method to draw a generic TReconBase
+    int ShowReconObject(const CP::THandle<CP::TReconBase> obj,
+                        int index,
+                        bool showHits = true);
 
     /// A method to draw a TReconObjectContainer
     int ShowReconObjects(const CP::THandle<CP::TReconObjectContainer> obj,

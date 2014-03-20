@@ -67,6 +67,10 @@ public:
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowRawDigitsButton() {return fShowRawDigitsButton;}
 
+    /// Get the button to select if raw or calibrated digits should be drawn.
+    TGButton* GetShowClusterUncertaintyButton() 
+        {return fShowClusterUncertaintyButton;}
+
     //////////////////////
     // RESULTS TAB WIDGETS
     //////////////////////
@@ -96,6 +100,7 @@ private:
     TGButton* fDrawVDigitsButton;
     TGButton* fDrawXDigitsButton;
     TGButton* fShowRawDigitsButton;
+    TGButton* fShowClusterUncertaintyButton;
 
     /// Make a tab in the browser to select algorithms shown.
     void MakeResultsTab();

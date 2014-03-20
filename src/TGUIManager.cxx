@@ -140,6 +140,15 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowRawDigitsButton = checkButton;
 
+    checkButton = new TGCheckButton(hf,"Show cluster uncertainty, not moments");
+    checkButton->SetToolTipText(
+        "Show the cluster uncertainty, not the cluster charge moments.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowClusterUncertaintyButton = checkButton;
+
     // Do the final layout and mapping.
     mainFrame->AddFrame(hf, layoutHints);
     mainFrame->MapSubwindows();
