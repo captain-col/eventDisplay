@@ -45,10 +45,6 @@ public:
     /// Get the check button selecting if reconstruction objects are shown.
     TGButton* GetShowFitsButton() {return fShowFitsButton;}
 
-    /// Get the check button selecting if hits associated with shown
-    /// reconstruction objects should be drawn.
-    TGButton* GetShowFitsHitsButton() {return fShowFitsHitsButton;}
-
     /// Get the check button selecting if trajectories should be shown.
     TGButton* GetShowTrajectoriesButton() {return fShowTrajectoriesButton;}
 
@@ -66,6 +62,14 @@ public:
 
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowRawDigitsButton() {return fShowRawDigitsButton;}
+
+    /// Get the check button selecting if hits associated with shown
+    /// reconstruction objects should be drawn.
+    TGButton* GetShowFitsHitsButton() {return fShowFitsHitsButton;}
+
+    /// Get the button to show constituent clusters of an object or not.
+    TGButton* GetShowConstituentClustersButton() 
+        {return fShowConstituentClustersButton;}
 
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowClusterUncertaintyButton() 
@@ -93,13 +97,14 @@ private:
     TGButton* fDrawEventButton;
     TGButton* fPrevEventButton;
     TGButton* fShowFitsButton;
-    TGButton* fShowFitsHitsButton;
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
     TGButton* fDrawUDigitsButton;
     TGButton* fDrawVDigitsButton;
     TGButton* fDrawXDigitsButton;
     TGButton* fShowRawDigitsButton;
+    TGButton* fShowFitsHitsButton;
+    TGButton* fShowConstituentClustersButton;
     TGButton* fShowClusterUncertaintyButton;
 
     /// Make a tab in the browser to select algorithms shown.

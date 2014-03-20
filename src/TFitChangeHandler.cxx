@@ -92,7 +92,8 @@ void CP::TFitChangeHandler::Apply() {
 int CP::TFitChangeHandler::ShowReconCluster(
     CP::THandle<CP::TReconCluster> obj,
     int index,
-    bool showHits) {
+    bool showHits,
+    bool forceUncertainty) {
     if (!obj) return index;
 
     double minEnergy = 0.18*unit::MeV/unit::mm;
@@ -165,8 +166,9 @@ int CP::TFitChangeHandler::ShowReconCluster(
     double tubeMajor;
     double tubeMinor;
     double tubeLong;
-    if (CP::TEventDisplay::Get().GUI().
-        GetShowClusterUncertaintyButton()->IsOn()) {
+    if (forceUncertainty 
+        || CP::TEventDisplay::Get().GUI()
+        .GetShowClusterUncertaintyButton()->IsOn()) {
         for (int i=0; i<3; ++i) {
             for (int j=0; j<3; ++j) {
                 tubeRot(i,j) = state->GetPositionCovariance(i,j);
@@ -406,9 +408,12 @@ int CP::TFitChangeHandler::ShowReconShower(
     fFitList->AddElement(eveShower);
 
     // Draw the clusters.
-    for (CP::TReconNodeContainer::iterator n = nodes.begin();
-         n != nodes.end(); ++n) {
-        index = ShowReconObject((*n)->GetObject(),index, false);
+    if (CP::TEventDisplay::Get().GUI()
+        .GetShowConstituentClustersButton()->IsOn()) {
+        for (CP::TReconNodeContainer::iterator n = nodes.begin();
+             n != nodes.end(); ++n) {
+            index = ShowReconObject((*n)->GetObject(),index, false, false);
+        }
     }
 
     CP::TCaptLog::DecreaseIndentation();
@@ -576,6 +581,15 @@ int CP::TFitChangeHandler::ShowReconTrack(
         showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
     }
 
+    // Draw the clusters.
+    if (CP::TEventDisplay::Get().GUI()
+        .GetShowConstituentClustersButton()->IsOn()) {
+        for (CP::TReconNodeContainer::iterator n = nodes.begin();
+             n != nodes.end(); ++n) {
+            index = ShowReconObject((*n)->GetObject(),index, false, true);
+        }
+    }
+
     CP::TCaptLog::DecreaseIndentation();
     return index;
 }
@@ -626,11 +640,12 @@ int CP::TFitChangeHandler::ShowReconVertex(
 
 int CP::TFitChangeHandler::ShowReconObject(CP::THandle<CP::TReconBase> obj,
                                            int index,
-                                           bool showHits) {
+                                           bool showHits,
+                                           bool forceUncertainty) {
     if (!obj) return index;
     CP::THandle<CP::TReconCluster> cluster = obj;
     if (cluster) {
-        index = ShowReconCluster(cluster, index, showHits);
+        index = ShowReconCluster(cluster, index, showHits, forceUncertainty);
         return index;
     }
     CP::THandle<CP::TReconShower> shower = obj;
@@ -664,7 +679,7 @@ int CP::TFitChangeHandler::ShowReconObjects(
     CP::TCaptLog::IncreaseIndentation();
     for (CP::TReconObjectContainer::iterator obj = objects->begin();
          obj != objects->end(); ++obj) {
-        index = ShowReconObject(*obj, index);
+        index = ShowReconObject(*obj, index, true, false);
     }
     CP::TCaptLog::DecreaseIndentation();
     return index;
