@@ -69,9 +69,14 @@ void CP::TTrajectoryChangeHandler::Apply() {
         TEveLine *track = new TEveLine();
         track->SetName("trajectory");
         track->SetTitle(label.str().c_str());
-        track->SetLineColor(kYellow);
-        if (charged) track->SetLineStyle(3);
-        else track->SetLineStyle(4);
+        if (charged) {
+            track->SetLineColor(kYellow);
+            track->SetLineStyle(3);
+        }
+        else {
+            track->SetLineColor(kYellow+4);
+            track->SetLineStyle(4);
+        }
 
         for (std::size_t p = 0; p < points.size(); ++p) {
             gGeoManager->PushPath();
