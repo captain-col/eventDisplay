@@ -204,6 +204,14 @@ void CP::TGUIManager::MakeResultsTab() {
     // from the command line!
     fDefaultResult = new TGTextEntry(hf);
     fDefaultResult->SetText("TCaptainRecon/final");
+    fDefaultResult->SetToolTipText(
+        "Enter a regular expression to select algorithm results\n"
+        "to be shown.  The usual regexp syntax applys:\n" 
+        "    .   -- Match any character\n"
+        "    .*  -- Match any sequence of characters\n"
+        "    |   -- \'or\'\n"
+        "See grep for more details.  A result is show if the\n"
+        "regexpn matchs any sub-string in the result name." );
 
     hf->AddFrame(fDefaultResult,layoutHints);
     

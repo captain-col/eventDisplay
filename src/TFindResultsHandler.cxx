@@ -14,6 +14,8 @@
 #include <TEveManager.h>
 #include <TEveLine.h>
 
+#include <TPRegexp.h>
+
 #include <sstream>
 
 CP::TFindResultsHandler::TFindResultsHandler() {
@@ -31,6 +33,7 @@ void CP::TFindResultsHandler::Apply() {
     TGListBox* resultsList = CP::TEventDisplay::Get().GUI().GetResultsList();
     
     std::string defaultResult(defResult->GetText());
+    TPRegexp regularExp(defResult->GetText());
 
     resultsList->RemoveAll();
     int id = 0;
@@ -49,10 +52,10 @@ void CP::TFindResultsHandler::Apply() {
                           fullName) != existingEntries.end()) continue;
             existingEntries.push_back(fullName);
             resultsList->AddEntry(rc->GetFullName(),++id);
-            if (defaultResult.size() > 0 && 
-                fullName.find(defaultResult)!=std::string::npos) {
-                resultsList->Select(id);
-            }
+            // Check to see if this result should be selected
+            if (defaultResult.size() == 0) continue;
+            if (!regularExp.Match(fullName.c_str())) continue;
+            resultsList->Select(id);
             continue;
         }
         CP::TDataVector* dv = dynamic_cast<CP::TDataVector*>(current);
