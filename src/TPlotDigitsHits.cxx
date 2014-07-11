@@ -92,10 +92,13 @@ CP::TPlotDigitsHits::~TPlotDigitsHits() {}
 
 void CP::TPlotDigitsHits::DrawDigits(int plane) {
 
-    CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
+    for (std::vector<TObject*>::iterator g = fGraphicsDelete.begin();
+         g != fGraphicsDelete.end(); ++g) {
+        delete (*g);
+    }
+    fGraphicsDelete.clear();
 
-    CP::THandle<CP::TDigitContainer> pmt
-        = event->Get<CP::TDigitContainer>("~/digits/pmt");
+    CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
 
     // True if the sample values are times (not number of samples).
     bool samplesInTime = false;
@@ -114,16 +117,10 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
     
-    if (!pmt) {
-        CaptLog("No PMT signals for this event");
-        return;
-    }
-    
     if (!drift) {
         CaptLog("No drift signals for this event"); 
         return;
     }
-
 
     // Find the Z axis range for the histogram.  The median sample s the
     // middle.  The max is the "biggest" distance from the medial.
@@ -238,7 +235,6 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     }
 
     if (!canvas) {
-        std::cout << "CREATE A NEW DIGIT CANVAS" << std::endl;
         switch (plane) {
         case 0: canvas=new TCanvas("canvasXDigits","X Digits",500,300); break;
         case 1: canvas=new TCanvas("canvasVDigits","V Digits",500,300); break;
@@ -258,59 +254,84 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     gPad->Update();
 
     ////////////////////////////////////////////////////////////
+    // Now plot the PMT hits on the histogram.
+    ////////////////////////////////////////////////////////////
+    
+    CP::THandle<CP::THitSelection> pmts
+        = event->Get<CP::THitSelection>("~/hits/pmt");
+    if (pmts) {
+        for (CP::THitSelection::iterator h = pmts->begin();
+             h != pmts->end(); ++h) {
+            TGeometryId id = (*h)->GetGeomId();
+            
+            double hTime = (*h)->GetTime();
+            double dTime = (hTime+fDigitOffset)/(fDigitStep/digitSampleTime);
+            
+            int n=0;
+            double px[10];
+            double py[10];
+            px[n] = 1;
+            py[n++] = dTime;
+            px[n] = wireCount-1;
+            py[n++] = dTime;
+            TPolyLine* pline = new TPolyLine(n,px,py);
+            pline->SetLineWidth(1);
+            pline->SetLineColor(kGreen);
+            pline->Draw();
+            fGraphicsDelete.push_back(pline);
+        }
+    }
+    
+    ////////////////////////////////////////////////////////////
     // Now plot the 2D hits on the histogram.
     ////////////////////////////////////////////////////////////
     
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
 
-    if (!hits) return;
-
-    for (std::vector<TObject*>::iterator g = fGraphicsDelete.begin();
-         g != fGraphicsDelete.end(); ++g) {
-        delete (*g);
-    }
-    fGraphicsDelete.clear();
-
-    for (CP::THitSelection::iterator h = hits->begin();
-         h != hits->end(); ++h) {
-        TGeometryId id = (*h)->GetGeomId();
-        if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
-        // The wire number (offset for the middle of the bin).
-        double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
-        // The hit time.
-        double time = (*h)->GetTime();
-        // The digitized hit time.
-        double dTime = (time+fDigitOffset)/(fDigitStep/digitSampleTime);
-        // The hit RMS.
-        double rms = (*h)->GetTimeRMS();
-        // The digitized RMS
-        double dRMS = -1;
-
-        if (rms<10*unit::microsecond) dRMS = rms/(fDigitStep/digitSampleTime);
-
-        TMarker* vtx = new TMarker(wire, dTime, 6);
-        vtx->SetMarkerSize(1);
-        vtx->SetMarkerColor(kRed);
-        vtx->Draw();
-        fGraphicsDelete.push_back(vtx);
-
-        if (dRMS > 0) {
-            int n=0;
-            double px[10];
-            double py[10];
-            px[n] = wire;
-            py[n++] = dTime-dRMS;
-            px[n] = wire;
-            py[n++] = dTime+dRMS;
-            TPolyLine* pline = new TPolyLine(n,px,py);
-            pline->SetLineWidth(1);
-            pline->SetLineColor(kRed);
-            pline->Draw();
-            fGraphicsDelete.push_back(pline);
+    if (hits) {
+        for (CP::THitSelection::iterator h = hits->begin();
+             h != hits->end(); ++h) {
+            TGeometryId id = (*h)->GetGeomId();
+            if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            // The wire number (offset for the middle of the bin).
+            double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
+            // The hit time.
+            double time = (*h)->GetTime();
+            // The digitized hit time.
+            double dTime = (time+fDigitOffset)/(fDigitStep/digitSampleTime);
+            // The hit RMS.
+            double rms = (*h)->GetTimeRMS();
+            // The digitized RMS
+            double dRMS = -1;
+            
+            if (rms<10*unit::microsecond) {
+                dRMS = rms/(fDigitStep/digitSampleTime);
+            }
+            
+            TMarker* vtx = new TMarker(wire, dTime, 6);
+            vtx->SetMarkerSize(1);
+            vtx->SetMarkerColor(kRed);
+            vtx->Draw();
+            fGraphicsDelete.push_back(vtx);
+            
+            if (dRMS > 0) {
+                int n=0;
+                double px[10];
+                double py[10];
+                px[n] = wire;
+                py[n++] = dTime-dRMS;
+                px[n] = wire;
+                py[n++] = dTime+dRMS;
+                TPolyLine* pline = new TPolyLine(n,px,py);
+                pline->SetLineWidth(1);
+                pline->SetLineColor(kRed);
+                pline->Draw();
+                fGraphicsDelete.push_back(pline);
+            }
         }
     }
-    
+
     gPad->Update();
     
 }
