@@ -23,6 +23,35 @@ ClassImp(CP::TEventChangeManager);
 
 namespace {
 
+    /// This takes a geometry id and "clones" it into the Eve display.
+    TEveGeoShape* GeometryClone(CP::TGeometryId id) {
+        std::cout << id << " " << id.GetName() << std::endl;
+        if (!CP::TManager::Get().GeomId().CdId(id)) return NULL;
+
+        TGeoNode* current = gGeoManager->GetCurrentNode();
+        TGeoMatrix* currMat = gGeoManager->GetCurrentMatrix();
+        TGeoShape* currShape = current->GetVolume()->GetShape();
+
+        TEveGeoShape *fakeShape = new TEveGeoShape(id.GetName().c_str());
+        
+        TGeoMatrix* mat = currMat->MakeClone();
+        fakeShape->SetTransMatrix(*mat);
+        
+        // Clone the shape so that it can be displayed.  This has to play some
+        // fancy footsie to get the gGeoManager memory management right.  It
+        // first saves the current manager, then gets an internal geometry
+        // manager used by TEveGeoShape, and then resets the old manager once
+        // the shape is created.
+        TGeoManager* saveGeom = gGeoManager;
+        gGeoManager = fakeShape->GetGeoMangeur();
+        TGeoShape* clonedShape 
+            = dynamic_cast<TGeoShape*> (currShape->Clone("fakeShape"));
+        fakeShape->SetShape(clonedShape);
+        gGeoManager = saveGeom;
+        
+        return fakeShape;
+    }
+
     /// This is called when a new geometry is loaded.  The implementation is
     /// sloppy since it assumes it's only going to be called once.  That's
     /// actually a reasonable assumption for the usual use case, but it should
@@ -32,44 +61,29 @@ namespace {
     public:
         void Callback(const CP::TEvent* const event) {
             CaptError("New geometry loaded " << gGeoManager);
-            // Use geometry identifiers to change to the drift region.
-            CP::TGeometryId id = CP::GeomId::Captain::Drift();
-            CP::TManager::Get().GeomId().CdId(id); 
 
             if (!CP::TEventDisplay::Get().EventChange().GetShowGeometry()) {
                 return;
             }
 
-            TGeoNode* current = gGeoManager->GetCurrentNode();
-            TGeoMatrix* currMat = gGeoManager->GetCurrentMatrix();
-            TGeoShape* currShape = current->GetVolume()->GetShape();
+            TEveElementList* simple = new TEveElementList("simplifiedGeometry");
 
-            TEveElementList* fakeGeometry = new TEveElementList("fakeGeometry");
+            // Add the drift region.
+            TEveGeoShape *shape = GeometryClone(CP::GeomId::Captain::Drift());
+            shape->SetMainColor(kCyan);
+            shape->SetMainTransparency(80);
+            simple->AddElement(shape);
 
-            TEveGeoShape *fakeDrift = new TEveGeoShape("fakeDrift");
-            
-            fakeDrift->SetMainColor(kCyan);
-            fakeDrift->SetMainTransparency(80);
+            // Add the pmts.  There are up to about 24, but this has a large
+            // limit so that it catches any expansions.
+            for (int i=0; i<200; ++i) {
+                shape = GeometryClone(CP::GeomId::Captain::Photosensor(i));
+                if (!shape) break;
+                shape->SetMainColor(kYellow);
+                simple->AddElement(shape);
+            }
 
-            TGeoMatrix* mat = currMat->MakeClone();
-            fakeDrift->SetTransMatrix(*mat);
-
-            // Clone the shape for the drift region so that it can be
-            // displayed.  This has to play some fancy footsie to get the
-            // gGeoManager memory management right.  It first saves the
-            // current manager, then gets an internal geometry manager used by
-            // TEveGeoShape, and then resets the old manager once the shape is
-            // created.
-            TGeoManager* saveGeom = gGeoManager;
-            gGeoManager = fakeDrift->GetGeoMangeur();
-            TGeoShape* clonedShape 
-                = dynamic_cast<TGeoShape*> (currShape->Clone("fakeShape"));
-            fakeDrift->SetShape(clonedShape);
-            gGeoManager = saveGeom;
-
-            fakeGeometry->AddElement(fakeDrift);
-
-            gEve->AddGlobalElement(fakeGeometry);
+            gEve->AddGlobalElement(simple);
         }
     };
 };
