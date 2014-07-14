@@ -27,6 +27,7 @@
 #include <TEveManager.h>
 #include <TEveGeoShape.h>
 #include <TEveLine.h>
+#include <TEveRGBAPalette.h>
 
 #include <sstream>
 
@@ -36,6 +37,8 @@ CP::TPMTChangeHandler::TPMTChangeHandler() {
     fPMTList->SetMainColor(kGreen);
     fPMTList->SetMainAlpha(0.5);
     gEve->AddElement(fPMTList);
+
+    fPalette = new TEveRGBAPalette(0,15,false,false,true);
 
 }
 
@@ -61,7 +64,7 @@ void CP::TPMTChangeHandler::Apply() {
     if (!pmts) return;
 
     // Draw the hits.
-    CP::TShowPMTHits showPMTs;
+    CP::TShowPMTHits showPMTs(fPalette);
     showPMTs(fPMTList, *pmts);
 
 }

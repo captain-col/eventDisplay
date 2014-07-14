@@ -9,6 +9,7 @@ namespace CP {
 };
 
 class TEveElementList;
+class TEveRGBAPalette;
 
 /// Add a set of hits from a hit selection to the provided elements list.  If
 /// there is a problem, this will return false. 
@@ -16,7 +17,7 @@ class CP::TShowPMTHits {
 public:
 
     /// Construct an object to show the PMT hits.
-    explicit TShowPMTHits();
+    explicit TShowPMTHits(TEveRGBAPalette* palette);
 
     /// Show the PMT hits in the selection.  The element
     /// list is mutated by adding elements that will actually show the hit
@@ -25,6 +26,9 @@ public:
                       const CP::THitSelection& hits);
 private:
 
+    /// The palette to draw with.
+    TEveRGBAPalette* fPalette;
+    
 };
 #endif
 
