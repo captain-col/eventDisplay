@@ -17,14 +17,12 @@ bool CP::TShowPMTHits::operator () (TEveElementList* elements,
                                     const CP::THitSelection& hits) {
     
     TEveBoxSet* boxes = new TEveBoxSet(hits.GetName());
-    boxes->SetMainColor(kYellow);
-    boxes->SetPalette(fPalette);
     boxes->Reset(TEveBoxSet::kBT_AABox, kTRUE, 128);
 
     std::map<CP::TGeometryId, double > hitCharges;
     std::map<CP::TGeometryId, CP::THandle<CP::THit> > firstHits;
 
-
+    double maxCharge = 1.0;
     for (CP::THitSelection::const_iterator h = hits.begin();
          h != hits.end(); ++h) {
         CP::THandle<CP::THit> firstHit = firstHits[(*h)->GetGeomId()];
@@ -32,6 +30,7 @@ bool CP::TShowPMTHits::operator () (TEveElementList* elements,
             firstHits[(*h)->GetGeomId()] = *h;
         }
         hitCharges[(*h)->GetGeomId()] += (*h)->GetCharge();
+        maxCharge = std::max(maxCharge, hitCharges[(*h)->GetGeomId()]);
     }
 
     TVector3 pos; 
@@ -48,6 +47,7 @@ bool CP::TShowPMTHits::operator () (TEveElementList* elements,
                       2*xyHalf, 
                       2*xyHalf,
                       20*unit::mm);
+        charge = 120*std::log(1.0+charge/maxCharge)/std::log(2.0);
         boxes->DigitValue(charge);
     }
     boxes->RefitPlex();
