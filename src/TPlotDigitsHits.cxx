@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 
 namespace {
     double GetDigitFirstTime(const CP::TDigit* d) {
@@ -165,7 +166,10 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     // Connect to the histogram to show.
     TH2F* digitPlot = NULL;
     int wireCount = CP::TGeometryInfo::Get().GetWireCount(plane);
-    
+    std::ostringstream histTitle;
+    histTitle << "Event " << event->GetContext().GetRun()
+              << "." << event->GetContext().GetEvent() << ":";
+
     switch (plane) {
     case 0:
         if (fXPlaneHist) delete fXPlaneHist;
@@ -173,19 +177,34 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             = new TH2F("xPlane", "Charge on the X wires",
                        wireCount, 0, wireCount,
                        signalBins, signalStart, signalEnd);
-        if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
-        else digitPlot->SetYTitle("Sample Number");
+        if (samplesInTime) {
+            digitPlot->SetYTitle("Sample Time (us)");
+            histTitle << " Calibrated charge on X wires";
+        }
+        else {
+            digitPlot->SetYTitle("Sample Number");
+            histTitle << " Uncalibrated ADC value X wires";
+        }
         digitPlot->SetXTitle("X Wire");
+        digitPlot->SetTitle(histTitle.str().c_str());
         break;
+
     case 1:
         if (fVPlaneHist) delete fVPlaneHist;
         fVPlaneHist = digitPlot
             = new TH2F("vPlane", "Charge on the V wires",
                        wireCount, 0, wireCount,
                        signalBins, signalStart, signalEnd);
-        if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
-        else digitPlot->SetYTitle("Sample Number");
+        if (samplesInTime) {
+            digitPlot->SetYTitle("Sample Time (us)");
+            histTitle << " Calibrated charge on V wires";
+        }
+        else {
+            digitPlot->SetYTitle("Sample Number");
+            histTitle << " Uncalibrated ADC value V wires";
+        }
         digitPlot->SetXTitle("V Wire");
+        digitPlot->SetTitle(histTitle.str().c_str());
         break;
         
     case 2:
@@ -194,9 +213,16 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             = new TH2F("uPlane", "Charge on the U wires",
                        wireCount, 0, wireCount,
                        signalBins, signalStart, signalEnd);
-        if (samplesInTime) digitPlot->SetYTitle("Sample Time (us)");
-        else digitPlot->SetYTitle("Sample Number");
+        if (samplesInTime) {
+            digitPlot->SetYTitle("Sample Time (us)");
+            histTitle << " Calibrated charge on U wires";
+        }
+        else {
+            digitPlot->SetYTitle("Sample Number");
+            histTitle << " Uncalibrated ADC value U wires";
+        }
         digitPlot->SetXTitle("U Wire");
+        digitPlot->SetTitle(histTitle.str().c_str());
         break;
     }    
 
@@ -243,14 +269,27 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
 
-    canvas->cd();
+    // Update the canvas title.
+    std::ostringstream canvasTitle;
+    canvasTitle << "Event " << event->GetContext().GetRun()
+                << "." << event->GetContext().GetEvent() << ":";
 
+    switch (plane) {
+    case 0: canvasTitle << " X Digits"; break;
+    case 1: canvasTitle << " V Digits"; break;
+    case 2: canvasTitle << " U Digits"; break;
+    default: CaptError("Invalid canvas plane " << plane);
+    }
+    canvas->SetTitle(canvasTitle.str().c_str());
+
+    canvas->cd();
+    
     digitPlot->SetMinimum(-maxVal);
     digitPlot->SetMaximum(maxVal+1);
     digitPlot->SetContour(100);
     digitPlot->SetStats(false);
     digitPlot->Draw("colz");
-    
+
     gPad->Update();
 
     ////////////////////////////////////////////////////////////
