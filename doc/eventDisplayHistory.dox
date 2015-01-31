@@ -1,2 +1,16 @@
 /*! \page eventDisplayHistory History for the eventDisplay Package 
+
+\section eventDisplay_v0r0p0_history Version 0.0.0
+
+Freeze information:
+   - Freeze Date: Sat Jan 31 18:23:02 2015
+   - Freeze User: mcgrew
+   - Freeze Host: boxer 
+
+
+FIRST CAPTAIN FREEZE
+
+An event display.  This currently concentrates on the TPC and photosensors,
+but that is just the current implementation.  It works for both CAPTAIN and mini-CAPTAIN.
+
 */
