@@ -133,7 +133,6 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         const CP::TDigit* digit 
             = dynamic_cast<const CP::TDigit*>(*d);
         if (!digit) continue;
-        double wire = -1;
         CP::TGeometryId id 
             = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
         if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
@@ -161,7 +160,6 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         const CP::TDigit* digit 
             = dynamic_cast<const CP::TDigit*>(*d);
         if (!digit) continue;
-        double wire = -1;
         CP::TGeometryId id 
             = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
         if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
@@ -255,12 +253,11 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         const CP::TDigit* digit 
             = dynamic_cast<const CP::TDigit*>(*d);
         if (!digit) continue;
-        double wire = -1;
         CP::TGeometryId id 
             = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
         if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
         // Plot the digits for this channel.
-        wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
+        double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
         for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
             double tbin = GetDigitFirstTime(digit) 
                 + GetDigitSampleTime(digit)*i;
