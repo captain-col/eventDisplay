@@ -143,6 +143,9 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             samples.push_back(s);
         }
     }
+
+    if (samples.empty()) return;
+    
     std::sort(samples.begin(),samples.end());
     double medianSample = samples[0.5*samples.size()];
 
