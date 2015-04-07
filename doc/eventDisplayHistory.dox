@@ -13,4 +13,18 @@ FIRST CAPTAIN FREEZE
 An event display.  This currently concentrates on the TPC and photosensors,
 but that is just the current implementation.  It works for both CAPTAIN and mini-CAPTAIN.
 
+
+\section eventDisplay_v0r0p1_history Version 0.0.1
+
+Freeze information:
+   - Freeze Date: Tue Apr  7 14:00:13 2015
+   - Freeze User: mcgrew
+   - Freeze Host: boxer boxer 
+
+
+BUG FIX:
+
+** Fix the pedestal subtraction when drawing the raw hits, and remove some
+   unused variables.
+
 */
