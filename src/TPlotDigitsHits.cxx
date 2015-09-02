@@ -360,14 +360,20 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             double time = (*h)->GetTime();
             // The digitized hit time.
             double dTime = (time+fDigitOffset)/(fDigitStep/digitSampleTime);
+            // The digitized hit start time.
+            double dStartTime
+                = ((*h)->GetTimeStart()
+                   +fDigitOffset)/(fDigitStep/digitSampleTime);
+            // The digitized hit start time.
+            double dStopTime
+                = ((*h)->GetTimeStop()
+                   +fDigitOffset)/(fDigitStep/digitSampleTime);
             // The hit RMS.
             double rms = (*h)->GetTimeRMS();
             // The digitized RMS
             double dRMS = -1;
             
-            if (rms<10*unit::microsecond) {
-                dRMS = rms/(fDigitStep/digitSampleTime);
-            }
+            dRMS = rms/(fDigitStep/digitSampleTime);
             
             TMarker* vtx = new TMarker(wire, dTime, 6);
             vtx->SetMarkerSize(1);
@@ -375,6 +381,21 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             vtx->Draw();
             fGraphicsDelete.push_back(vtx);
             
+            if (dStartTime < dTime && dTime < dStopTime) {
+                int n=0;
+                double px[10];
+                double py[10];
+                px[n] = wire;
+                py[n++] = dStartTime;
+                px[n] = wire;
+                py[n++] = dStopTime;
+                TPolyLine* pline = new TPolyLine(n,px,py);
+                pline->SetLineWidth(1);
+                pline->SetLineColor(kRed);
+                pline->Draw();
+                fGraphicsDelete.push_back(pline);
+            }
+
             if (dRMS > 0) {
                 int n=0;
                 double px[10];
@@ -384,7 +405,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 px[n] = wire;
                 py[n++] = dTime+dRMS;
                 TPolyLine* pline = new TPolyLine(n,px,py);
-                pline->SetLineWidth(1);
+                pline->SetLineWidth(3);
                 pline->SetLineColor(kRed);
                 pline->Draw();
                 fGraphicsDelete.push_back(pline);
