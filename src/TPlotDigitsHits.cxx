@@ -356,6 +356,8 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
             // The wire number (offset for the middle of the bin).
             double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
+            // The hit charge
+            double charge = (*h)->GetCharge();
             // The hit time.
             double time = (*h)->GetTime();
             // The digitized hit time.
@@ -373,11 +375,43 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             // The digitized RMS
             double dRMS = -1;
             
+            int color = kRed;
+            if (charge < 4000.0) {
+                color = kGreen-7;
+            }
+            else if (charge < 6000.0) {
+                color = kGreen+2;
+            }
+            else if (charge < 8000.0) {
+                color = kCyan-7;
+            }
+            else if (charge < 10000.0) {
+                color = kCyan+1;
+            }
+            else if (charge < 13000.0) {
+                color = kBlue;
+            }
+            else if (charge < 16000.0) {
+                color = kBlue-7;
+            }
+            else if (charge < 20000.0) {
+                color = kRed;
+            }
+            else if (charge < 25000.0) {
+                color = kRed+1;
+            }
+            else if (charge < 32000.0) {
+                color = kMagenta;
+            }
+            else {
+                color = kBlack+1;
+            }
+            
             dRMS = rms/(fDigitStep/digitSampleTime);
             
             TMarker* vtx = new TMarker(wire, dTime, 6);
             vtx->SetMarkerSize(1);
-            vtx->SetMarkerColor(kRed);
+            vtx->SetMarkerColor(color);
             vtx->Draw();
             fGraphicsDelete.push_back(vtx);
             
@@ -391,7 +425,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 py[n++] = dStopTime;
                 TPolyLine* pline = new TPolyLine(n,px,py);
                 pline->SetLineWidth(1);
-                pline->SetLineColor(kRed);
+                pline->SetLineColor(color);
                 pline->Draw();
                 fGraphicsDelete.push_back(pline);
             }
@@ -406,7 +440,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 py[n++] = dTime+dRMS;
                 TPolyLine* pline = new TPolyLine(n,px,py);
                 pline->SetLineWidth(3);
-                pline->SetLineColor(kRed);
+                pline->SetLineColor(color);
                 pline->Draw();
                 fGraphicsDelete.push_back(pline);
             }
