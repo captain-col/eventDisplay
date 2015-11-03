@@ -13,6 +13,7 @@
 #include <TRuntimeParameters.hxx>
 
 #include <TChannelInfo.hxx>
+#include <TChannelCalib.hxx>
 #include <TGeometryInfo.hxx>
 
 #include <TCanvas.h>
@@ -79,19 +80,14 @@ namespace {
 CP::TPlotDigitsHits::TPlotDigitsHits()
     : fXPlaneHist(NULL), fVPlaneHist(NULL), fUPlaneHist(NULL) {
 
-    fDigitStep 
-        = CP::TRuntimeParameters::Get().GetParameterD(
-            "eventDisplay.digitization.step");
-
-    fDigitOffset 
-        = CP::TRuntimeParameters::Get().GetParameterD(
-            "eventDisplay.digitization.offset");
-
 }
 
 CP::TPlotDigitsHits::~TPlotDigitsHits() {}
 
 void CP::TPlotDigitsHits::DrawDigits(int plane) {
+    CP::TChannelCalib chanCalib;
+    double wireTimeStep = -1.0;
+    double wireTimeOffset = 0.0;
 
     for (std::vector<TObject*>::iterator g = fGraphicsDelete.begin();
          g != fGraphicsDelete.end(); ++g) {
@@ -259,6 +255,10 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         CP::TGeometryId id 
             = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
         if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+        if (wireTimeStep < 0.0) {
+            wireTimeOffset=chanCalib.GetTimeConstant(digit->GetChannelId(),0);
+            wireTimeStep=chanCalib.GetTimeConstant(digit->GetChannelId(),1);
+        }
         // Plot the digits for this channel.
         double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
         for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
@@ -266,7 +266,8 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 + GetDigitSampleTime(digit)*i;
             double s = GetDigitSample(digit,i)-medianSample;
             if (!std::isfinite(s)) continue;
-            digitPlot->Fill(wire,tbin+1E-6,s);
+            int bin = digitPlot->Fill(wire,tbin+1E-6,s);
+            digitPlot->SetBinError(bin,1.0);
             maxVal = std::max(maxVal,std::abs(s));
         }
     }
@@ -323,10 +324,10 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         for (CP::THitSelection::iterator h = pmts->begin();
              h != pmts->end(); ++h) {
             TGeometryId id = (*h)->GetGeomId();
-            
+            TChannelId cid = (*h)->GetChannelId();
             double hTime = (*h)->GetTime();
-            double dTime = (hTime+fDigitOffset)/(fDigitStep/digitSampleTime);
-            
+            if (!samplesInTime) hTime -= wireTimeOffset;
+            double dTime = hTime/(wireTimeStep/digitSampleTime);
             int n=0;
             double px[10];
             double py[10];
@@ -353,23 +354,25 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         for (CP::THitSelection::iterator h = hits->begin();
              h != hits->end(); ++h) {
             TGeometryId id = (*h)->GetGeomId();
+            TChannelId cid = (*h)->GetChannelId();
             if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
             // The wire number (offset for the middle of the bin).
             double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
             // The hit charge
             double charge = (*h)->GetCharge();
             // The hit time.
-            double time = (*h)->GetTime();
+            double hTime = (*h)->GetTime();
+            if (!samplesInTime) hTime -= wireTimeOffset;
             // The digitized hit time.
-            double dTime = (time+fDigitOffset)/(fDigitStep/digitSampleTime);
+            double dTime = hTime/(wireTimeStep/digitSampleTime);
             // The digitized hit start time.
-            double dStartTime
-                = ((*h)->GetTimeStart()
-                   +fDigitOffset)/(fDigitStep/digitSampleTime);
+            double dStartTime = ((*h)->GetTimeStart()-(*h)->GetTime());
+            dStartTime /= (wireTimeStep/digitSampleTime);
+            dStartTime += dTime;
             // The digitized hit start time.
-            double dStopTime
-                = ((*h)->GetTimeStop()
-                   +fDigitOffset)/(fDigitStep/digitSampleTime);
+            double dStopTime = ((*h)->GetTimeStop()-(*h)->GetTime());
+            dStopTime /= (wireTimeStep/digitSampleTime);
+            dStopTime += dTime;
             // The hit RMS.
             double rms = (*h)->GetTimeRMS();
             // The digitized RMS
@@ -407,13 +410,22 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 color = kBlack+1;
             }
             
-            dRMS = rms/(fDigitStep/digitSampleTime);
+            dRMS = rms/(wireTimeStep/digitSampleTime);
             
-            TMarker* vtx = new TMarker(wire, dTime, 6);
-            vtx->SetMarkerSize(1);
-            vtx->SetMarkerColor(color);
-            vtx->Draw();
-            fGraphicsDelete.push_back(vtx);
+            {
+                int n=0;
+                double px[10];
+                double py[10];
+                px[n] = wire-0.5;
+                py[n++] = dTime;
+                px[n] = wire+0.5;
+                py[n++] = dTime;
+                TPolyLine* pline = new TPolyLine(n,px,py);
+                pline->SetLineWidth(1);
+                pline->SetLineColor(color);
+                pline->Draw();
+                fGraphicsDelete.push_back(pline);
+            }
             
             if (dStartTime < dTime && dTime < dStopTime) {
                 int n=0;
@@ -425,6 +437,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 py[n++] = dStopTime;
                 TPolyLine* pline = new TPolyLine(n,px,py);
                 pline->SetLineWidth(1);
+                pline->SetLineStyle(3);
                 pline->SetLineColor(color);
                 pline->Draw();
                 fGraphicsDelete.push_back(pline);
