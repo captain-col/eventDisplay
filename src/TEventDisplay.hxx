@@ -31,6 +31,9 @@ public:
     /// Get a color from the palette using a logarithmic value scale.
     int LogColor(double val, double minVal, double maxVal, double magScale=5.0);
 
+    /// Convert an charge into a crude energy.
+    double CrudeEnergy(double charge) {return fEnergyPerCharge*charge;}
+    
 private:
     // Prevent direct construction.
     TEventDisplay();
@@ -56,6 +59,9 @@ private:
     // The number of colors in the palette.
     int fColorCount;
 
+    // The crude energy per charge conversion.
+    double fEnergyPerCharge;
+    
 };
 
 #endif

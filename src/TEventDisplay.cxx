@@ -9,6 +9,7 @@
 #include "TPMTChangeHandler.hxx"
 
 #include <TCaptLog.hxx>
+#include <TRuntimeParameters.hxx>
 
 #include <TEveManager.h>
 #include <TColor.h>
@@ -83,6 +84,10 @@ void CP::TEventDisplay::Init() {
     fColorBase = TColor::CreateGradientColorTable(abc, s, r, g, b, 
                                                   fColorCount);    
     
+    fEnergyPerCharge
+        = CP::TRuntimeParameters::Get().GetParameterD(
+            "eventDisplay.fits.energyPerCharge");
+
     CaptLog("Event display constructed");
 }
 

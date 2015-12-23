@@ -77,8 +77,5 @@ private:
     /// be drawn.
     bool fShowFitsHits;
 
-    /// The rough energy "calibration" between charge and energy.
-    double fEnergyPerCharge;
-
 };
 #endif
