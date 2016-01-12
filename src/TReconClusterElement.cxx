@@ -88,15 +88,12 @@ CP::TReconClusterElement::TReconClusterElement(CP::TReconCluster& cluster,
         }
     }
     else {
-        tubeRot(0,0) = majorAxis.X();
-        tubeRot(1,0) = majorAxis.Y();
-        tubeRot(2,0) = majorAxis.Z();
-        tubeRot(0,1) = minorAxis.X();
-        tubeRot(1,1) = minorAxis.Y();
-        tubeRot(2,1) = minorAxis.Z();
-        tubeRot(0,2) = longAxis.X();
-        tubeRot(1,2) = longAxis.Y();
-        tubeRot(2,2) = longAxis.Z();
+        const CP::TReconCluster::MomentMatrix& moments = cluster.GetMoments();
+        for (int i=0; i<3; ++i) {
+            for (int j=0; j<3; ++j) {
+                tubeRot(i,j) = moments(i,j);
+            }
+        }
     }
 
     ///////////////////////////////////////////
