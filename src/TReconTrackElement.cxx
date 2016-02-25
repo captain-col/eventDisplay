@@ -33,6 +33,7 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
     std::ostringstream title;
     title << "Track(" << track.GetUniqueID() << ") --" 
           << " Nodes: " << track.GetNodes().size()
+          << " Hits: " << track.GetHits()->size()
           << ",  Energy Deposit: " << track.GetEDeposit()
           << std::endl
           << "   Position:  (" 
@@ -101,6 +102,7 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
     int p=0;
 
     // Start at the front state of the track
+#ifdef LINE_TO_FRONT_STATE
     if (frontState) {
         TLorentzVector frontPos = frontState->GetPosition();
         TLorentzVector frontVar = frontState->GetPositionVariance();
@@ -118,7 +120,8 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                       << unit::AsString(frontState->GetDirection()));
         CP::TCaptLog::DecreaseIndentation();
     }
-
+#endif
+    
     for (CP::TReconNodeContainer::iterator n = nodes.begin();
          n != nodes.end(); ++n) {
         CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
@@ -154,6 +157,7 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
         CP::TCaptLog::DecreaseIndentation();
     }
 
+#ifdef LINE_TO_BACK_STATE
     // finish at the back state of the track
     if (backState) {
         TLorentzVector backPos = backState->GetPosition();
@@ -172,7 +176,8 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                       << unit::AsString(backState->GetDirection()));
         CP::TCaptLog::DecreaseIndentation();
     }
-
+#endif
+    
     AddElement(trackLine);
 
     CP::TCaptLog::DecreaseIndentation();
