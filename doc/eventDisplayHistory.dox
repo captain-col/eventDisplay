@@ -27,4 +27,24 @@ BUG FIX:
 ** Fix the pedestal subtraction when drawing the raw hits, and remove some
    unused variables.
 
+
+\section eventDisplay_v0r0p2_history Version 0.0.2
+
+Freeze information:
+   - Freeze Date: Thu Feb 25 13:39:57 2016
+   - Freeze User: mcgrew
+   - Freeze Host: boxer boxer 
+
+
+NEW FEATURES
+
+* Show more information about the hits.  This shows both the RMS and full
+  extent of the hits.
+
+* Limit the maximum size of a PMT mark
+
+* Show track fit uncertainties.
+
+* Don't extrapolate information.
+
 */
