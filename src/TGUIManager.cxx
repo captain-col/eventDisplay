@@ -131,6 +131,15 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowRawDigitsButton = checkButton;
 
+    checkButton = new TGCheckButton(hf,"Show all samples (slow)");
+    checkButton->SetToolTipText(
+        "Show all of the samples (don't combine them).");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowFullDigitsButton = checkButton;
+
     /////////////////////
     // Buttons to control how reconstruction objects are drawn.
     /////////////////////

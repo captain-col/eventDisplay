@@ -188,6 +188,12 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     histTitle << "Event " << event->GetContext().GetRun()
               << "." << event->GetContext().GetEvent() << ":";
 
+    int overSampling = 1.0;
+    if (!CP::TEventDisplay::Get().GUI().GetShowFullDigitsButton()->IsOn()) {
+        overSampling = 20.0;
+    }
+    signalBins /= overSampling;
+    
     switch (plane) {
     case 0:
         if (fXPlaneHist) delete fXPlaneHist;
@@ -266,13 +272,24 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 + GetDigitSampleTime(digit)*i;
             double s = GetDigitSample(digit,i)-medianSample;
             if (!std::isfinite(s)) continue;
-            int bin = digitPlot->Fill(wire,tbin+1E-6,s);
-            digitPlot->SetBinError(bin,1.0);
-            maxVal = std::max(maxVal,std::abs(s));
+            if (samplesInTime) {
+                int bin = digitPlot->Fill(wire,tbin+1E-6,s);
+                digitPlot->SetBinError(bin,1.0);
+            }
+            else {
+                int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
+                double v = digitPlot->GetBinContent(bin);
+                if (std::abs(s) > std::abs(v)) {
+                    digitPlot->SetBinContent(bin,s);
+                    digitPlot->SetBinError(bin,1.0);
+                }
+            }
+            int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
+            maxVal = std::max(maxVal,std::abs(digitPlot->GetBinContent(bin)));
         }
     }
     
-    maxVal= std::min(maxVal,10000.0);
+    maxVal= std::min(maxVal,overSampling*10000.0);
 
     TCanvas* canvas = NULL;
     switch (plane) {
