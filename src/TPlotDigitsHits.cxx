@@ -89,11 +89,21 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     double wireTimeStep = -1.0;
     double wireTimeOffset = 0.0;
 
-    for (std::vector<TObject*>::iterator g = fGraphicsDelete.begin();
-         g != fGraphicsDelete.end(); ++g) {
+    ///////////////////////////////////////////////////////////////////
+    // Delete any objects that were plotted on the canvas.
+    ///////////////////////////////////////////////////////////////////
+    std::vector<TObject*> *graphicsDelete = NULL;
+    switch(plane) {
+    case 0: graphicsDelete = &fGraphicsXDelete; break;
+    case 1: graphicsDelete = &fGraphicsVDelete; break;
+    case 2: graphicsDelete = &fGraphicsUDelete; break;
+    }
+    
+    for (std::vector<TObject*>::iterator g = graphicsDelete->begin();
+         g != graphicsDelete->end(); ++g) {
         delete (*g);
     }
-    fGraphicsDelete.clear();
+    graphicsDelete->clear();
 
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
 
@@ -356,7 +366,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             pline->SetLineWidth(1);
             pline->SetLineColor(kGreen);
             pline->Draw();
-            fGraphicsDelete.push_back(pline);
+            graphicsDelete->push_back(pline);
         }
     }
     
@@ -441,7 +451,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 pline->SetLineWidth(1);
                 pline->SetLineColor(color);
                 pline->Draw();
-                fGraphicsDelete.push_back(pline);
+                graphicsDelete->push_back(pline);
             }
             
             if (dStartTime < dTime && dTime < dStopTime) {
@@ -457,7 +467,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 pline->SetLineStyle(3);
                 pline->SetLineColor(color);
                 pline->Draw();
-                fGraphicsDelete.push_back(pline);
+                graphicsDelete->push_back(pline);
             }
 
             if (dRMS > 0) {
@@ -472,7 +482,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 pline->SetLineWidth(3);
                 pline->SetLineColor(color);
                 pline->Draw();
-                fGraphicsDelete.push_back(pline);
+                graphicsDelete->push_back(pline);
             }
         }
     }

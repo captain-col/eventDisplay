@@ -35,7 +35,9 @@ private:
     TH2F* fUPlaneHist;
 
     /// A vector of objects that needs to be eventually deleted.
-    std::vector<TObject*> fGraphicsDelete;
+    std::vector<TObject*> fGraphicsXDelete;
+    std::vector<TObject*> fGraphicsVDelete;
+    std::vector<TObject*> fGraphicsUDelete;
 
 };
 
