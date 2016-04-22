@@ -9,6 +9,7 @@ class TH2F;
 class TObject;
 class TGraphErrors;
 class TLegend;
+class TF1;
 
 /// Plot the digits and 2D hits on a canvas for the current event.  This can
 /// be connected to buttons in the event display GUI.
@@ -30,6 +31,8 @@ private:
 
     /// The legend
     TLegend* fGraphLegend;
+
+    TF1* fElectronLifeFunction;
 };
 
 #endif

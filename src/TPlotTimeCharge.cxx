@@ -16,13 +16,20 @@
 #include <TGraphErrors.h>
 #include <TLegend.h>
 #include <TH1F.h>
+#include <TF1.h>
 
 #include <iostream>
 #include <sstream>
 
 CP::TPlotTimeCharge::TPlotTimeCharge()
     : fXPlaneGraph(NULL), fVPlaneGraph(NULL), fUPlaneGraph(NULL),
-      fGraphLegend(NULL) { }
+      fGraphLegend(NULL) {
+    fElectronLifeFunction = new TF1("electronLifeFunction",
+                                    "[2]*exp(-(x-[1])/[0])");
+    fElectronLifeFunction->SetParName(0,"Electron Lifetime");
+    fElectronLifeFunction->SetParName(1,"Time Offset");
+    fElectronLifeFunction->SetParName(2,"Normalization");
+}
 
 CP::TPlotTimeCharge::~TPlotTimeCharge() {}
 
@@ -32,8 +39,14 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
 
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
-
     if (!hits) return;
+
+    bool drawXHits
+        = CP::TEventDisplay::Get().GUI().GetShowXTimeChargeButton()->IsOn();
+    bool drawVHits
+        = CP::TEventDisplay::Get().GUI().GetShowVTimeChargeButton()->IsOn();
+    bool drawUHits 
+        = CP::TEventDisplay::Get().GUI().GetShowUTimeChargeButton()->IsOn();
 
     double minTime = 1E+22;
     double maxTime = -1E+22;
@@ -52,6 +65,7 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsUWire((*h)->GetGeomId())) continue;
+        if (!drawUHits) continue;
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -64,14 +78,19 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         if (points>=maxPoints) break;
     }
     if (fUPlaneGraph) delete fUPlaneGraph;
-    fUPlaneGraph
-        = new TGraphErrors(points,time,charge,timeRMS,chargeUnc);
+    fUPlaneGraph = NULL;
+    if (points > 0) {
+        fUPlaneGraph
+            = new TGraphErrors(points,time,charge,timeRMS,chargeUnc);
+        fUPlaneGraph->SetName("GraphUPlaneTimeCharge");
+    }
 
     // Fill the graph for the V hits.
     points = 0;
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsVWire((*h)->GetGeomId())) continue;
+        if (!drawVHits) continue;
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -84,14 +103,19 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         if (points>=maxPoints) break;
     }
     if (fVPlaneGraph) delete fVPlaneGraph;
-    fVPlaneGraph
-        = new TGraphErrors(points,time,charge,timeRMS,chargeUnc);
-
+    fVPlaneGraph = NULL;
+    if (points > 0) {
+        fVPlaneGraph
+            = new TGraphErrors(points,time,charge,timeRMS,chargeUnc);
+        fVPlaneGraph->SetName("GraphVPlaneTimeCharge");
+    }
+    
     // Fill the graph for the X hits.
     points=0;
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsXWire((*h)->GetGeomId())) continue;
+        if (!drawXHits) continue;
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -104,8 +128,12 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         if (points>=maxPoints) break;
     }
     if (fXPlaneGraph) delete fXPlaneGraph;
-    fXPlaneGraph
-        = new TGraphErrors(points,time,charge,timeRMS,chargeUnc);
+    fXPlaneGraph = NULL;
+    if (points > 0) {
+        fXPlaneGraph
+            = new TGraphErrors(points,time,charge,timeRMS,chargeUnc);
+        fXPlaneGraph->SetName("GraphXPlaneTimeCharge");
+    }
 
     TCanvas* canvas = NULL;
     canvas = (TCanvas*) gROOT->FindObject("canvasTimeCharge");
@@ -114,6 +142,8 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     }
     canvas->SetTopMargin(0.07);
     canvas->SetRightMargin(0.04);
+    
+    if (!fXPlaneGraph && !fVPlaneGraph && !fUPlaneGraph) return;
     
     std::ostringstream titleStream;
     titleStream << "Hit Times and Charges"
@@ -130,24 +160,33 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
                                   titleStream.str().c_str());
     frame->GetYaxis()->SetTitleOffset(1.5);
     frame->GetXaxis()->SetTitleOffset(1.2);
+    std::cout << "Bins: " << frame->GetNbinsX() << std::endl;
+    int bins = (maxTime-minTime)/unit::microsecond;
+    frame->SetBins(bins,minTime/unit::microsecond,maxTime/unit::microsecond);
+    std::cout << "Bins: " << frame->GetNbinsX() << std::endl;
 
-    fUPlaneGraph->SetMarkerColor(kGreen+2);
-    fUPlaneGraph->SetMarkerStyle(21);
-    fUPlaneGraph->Draw("P");
+    if (fUPlaneGraph) {
+        fUPlaneGraph->SetMarkerColor(kGreen+2);
+        fUPlaneGraph->SetMarkerStyle(21);
+        fUPlaneGraph->Draw("P");
+    }
 
-    fVPlaneGraph->SetMarkerColor(kBlue);
-    fVPlaneGraph->SetMarkerStyle(21);
-    fVPlaneGraph->Draw("P");
+    if (fVPlaneGraph) {
+        fVPlaneGraph->SetMarkerColor(kBlue);
+        fVPlaneGraph->SetMarkerStyle(21);
+        fVPlaneGraph->Draw("P");
+    }
 
-    fXPlaneGraph->SetMarkerColor(kRed);
-    fXPlaneGraph->SetMarkerStyle(20);
-    fXPlaneGraph->Draw("P");
+    if (fXPlaneGraph) {
+        fXPlaneGraph->SetMarkerColor(kRed);
+        fXPlaneGraph->SetMarkerStyle(20);
+        fXPlaneGraph->Draw("P");
+    }
 
-    if (fGraphLegend) delete fGraphLegend;
     fGraphLegend = new TLegend(0.87,0.85,0.97,0.95);
-    fGraphLegend->AddEntry(fXPlaneGraph,"X Hits","p");
-    fGraphLegend->AddEntry(fVPlaneGraph,"V Hits","p");
-    fGraphLegend->AddEntry(fUPlaneGraph,"U Hits","p");
+    if (fXPlaneGraph) fGraphLegend->AddEntry(fXPlaneGraph,"X Hits","p");
+    if (fVPlaneGraph) fGraphLegend->AddEntry(fVPlaneGraph,"V Hits","p");
+    if (fUPlaneGraph) fGraphLegend->AddEntry(fUPlaneGraph,"U Hits","p");
     fGraphLegend->Draw();
 
     gPad->Update();

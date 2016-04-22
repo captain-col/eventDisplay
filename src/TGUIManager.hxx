@@ -51,6 +51,18 @@ public:
     /// Get the check button selecting if G4 hits should be shown.
     TGButton* GetShowG4HitsButton() {return fShowG4HitsButton;}
 
+    /// Get the button to draw the U plane digits.
+    TGButton* GetDrawTimeChargeButton() {return fDrawTimeChargeButton;}
+
+    /// Get the button to draw the U plane digits.
+    TGButton* GetShowXTimeChargeButton() {return fShowXTimeChargeButton;}
+
+    /// Get the button to draw the U plane digits.
+    TGButton* GetShowVTimeChargeButton() {return fShowVTimeChargeButton;}
+
+    /// Get the button to draw the U plane digits.
+    TGButton* GetShowUTimeChargeButton() {return fShowUTimeChargeButton;}
+
     /// Get the button to draw the X plane digits.
     TGButton* GetDrawXDigitsButton() {return fDrawXDigitsButton;}
 
@@ -59,9 +71,6 @@ public:
 
     /// Get the button to draw the U plane digits.
     TGButton* GetDrawUDigitsButton() {return fDrawUDigitsButton;}
-
-    /// Get the button to draw the U plane digits.
-    TGButton* GetDrawTimeChargeButton() {return fDrawTimeChargeButton;}
 
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowRawDigitsButton() {return fShowRawDigitsButton;}
@@ -105,10 +114,13 @@ private:
     TGButton* fShowFitsButton;
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
+    TGButton* fDrawTimeChargeButton;
+    TGButton* fShowXTimeChargeButton;
+    TGButton* fShowVTimeChargeButton;
+    TGButton* fShowUTimeChargeButton;
     TGButton* fDrawUDigitsButton;
     TGButton* fDrawVDigitsButton;
     TGButton* fDrawXDigitsButton;
-    TGButton* fDrawTimeChargeButton;
     TGButton* fShowRawDigitsButton;
     TGButton* fShowFullDigitsButton;
     TGButton* fShowFitsHitsButton;

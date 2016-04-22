@@ -103,6 +103,33 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(textButton, layoutHints);
     textButton->SetToolTipText("Draw the hit times and charges.");
     
+    checkButton = new TGCheckButton(hf,"Show X Hits");
+    fShowXTimeChargeButton = checkButton;
+    checkButton->SetOn();
+    checkButton->SetToolTipText("Show the times and charges for the X hits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+
+    checkButton = new TGCheckButton(hf,"Show V Hits");
+    fShowVTimeChargeButton = checkButton;
+    checkButton->SetOn();
+    checkButton->SetToolTipText("Show the times and charges for the V hits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+
+    checkButton = new TGCheckButton(hf,"Show U Hits");
+    fShowUTimeChargeButton = checkButton;
+    checkButton->SetOn();
+    checkButton->SetToolTipText("Show the times and charges for the Y hits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+
     /////////////////////
     // Buttons to draw the digits.
     /////////////////////
