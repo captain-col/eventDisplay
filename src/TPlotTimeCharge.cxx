@@ -33,6 +33,99 @@ CP::TPlotTimeCharge::TPlotTimeCharge()
 
 CP::TPlotTimeCharge::~TPlotTimeCharge() {}
 
+void CP::TPlotTimeCharge::FitTimeCharge() {
+    TCanvas* canvas = (TCanvas*) gROOT->FindObject("canvasTimeCharge");
+    if (!canvas) return;
+    double xMin = canvas->GetUxmin();
+    double xMax = canvas->GetUxmax();
+    // If the x plane hits are drawn, fit them.
+    if (fXPlaneGraph) {
+        // Find the range of "normalizations to use".
+        int closestPoint = 1E+10;
+        int closestNorm = 10000;
+        for (int i= 0; i< fXPlaneGraph->GetN(); ++i) {
+            double x, y;
+            fXPlaneGraph->GetPoint(i,x,y);
+            if (x<xMin) continue;
+            if (x<closestPoint) {
+                closestPoint = x;
+                closestNorm = y;
+            }
+        }
+        fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/10.0,
+                                        xMax-(xMax-xMin)/10.0);
+
+        fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
+        // Limit the range of electron lifetimes to fit (5us to 10 ms)
+        fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
+        // Fix the offset of the fit start to the beginning of the fit range.
+        fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
+        // Limit the range of normalizations
+        fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
+        fXPlaneGraph->Fit(fElectronLifeFunction,"R,W,ROB=0.7");
+        gPad->Update();
+        return;
+    }
+
+    // There wasn't an x graph, so try the V.
+    if (fVPlaneGraph) {
+        // Find the range of "normalizations to use".
+        int closestPoint = 1E+10;
+        int closestNorm = 10000;
+        for (int i= 0; i< fVPlaneGraph->GetN(); ++i) {
+            double x, y;
+            fVPlaneGraph->GetPoint(i,x,y);
+            if (x<xMin) continue;
+            if (x<closestPoint) {
+                closestPoint = x;
+                closestNorm = y;
+            }
+        }
+        fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/10.0,
+                                        xMax-(xMax-xMin)/10.0);
+
+        fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
+        // Limit the range of electron lifetimes to fit (5us to 10 ms)
+        fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
+        // Fix the offset of the fit start to the beginning of the fit range.
+        fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
+        // Limit the range of normalizations
+        fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
+        fVPlaneGraph->Fit(fElectronLifeFunction,"R,W,ROB=0.7");
+        gPad->Update();
+        return;
+    }
+
+    // There wasn't a V graph, so try the U.
+    if (fUPlaneGraph) {
+        // Find the range of "normalizations to use".
+        int closestPoint = 1E+10;
+        int closestNorm = 10000;
+        for (int i= 0; i< fUPlaneGraph->GetN(); ++i) {
+            double x, y;
+            fUPlaneGraph->GetPoint(i,x,y);
+            if (x<xMin) continue;
+            if (x<closestPoint) {
+                closestPoint = x;
+                closestNorm = y;
+            }
+        }
+        fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/10.0,
+                                        xMax-(xMax-xMin)/10.0);
+
+        fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
+        // Limit the range of electron lifetimes to fit (5us to 10 ms)
+        fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
+        // Fix the offset of the fit start to the beginning of the fit range.
+        fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
+        // Limit the range of normalizations
+        fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
+        fUPlaneGraph->Fit(fElectronLifeFunction,"R,W,ROB=0.7");
+        gPad->Update();
+        return;
+    }
+}
+
 void CP::TPlotTimeCharge::DrawTimeCharge() {
 
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
@@ -160,10 +253,8 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
                                   titleStream.str().c_str());
     frame->GetYaxis()->SetTitleOffset(1.5);
     frame->GetXaxis()->SetTitleOffset(1.2);
-    std::cout << "Bins: " << frame->GetNbinsX() << std::endl;
     int bins = (maxTime-minTime)/unit::microsecond;
     frame->SetBins(bins,minTime/unit::microsecond,maxTime/unit::microsecond);
-    std::cout << "Bins: " << frame->GetNbinsX() << std::endl;
 
     if (fUPlaneGraph) {
         fUPlaneGraph->SetMarkerColor(kGreen+2);

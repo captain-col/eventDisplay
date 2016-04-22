@@ -57,7 +57,13 @@ void CP::TEventDisplay::Init() {
                   "CP::TPlotTimeCharge", 
                   fPlotTimeCharge,
                   "DrawTimeCharge()");
-    
+
+    CP::TEventDisplay::Get().GUI().GetFitTimeChargeButton()
+        ->Connect("Clicked()",
+                  "CP::TPlotTimeCharge", 
+                  fPlotTimeCharge,
+                  "FitTimeCharge()");
+
     // Connect the class to draw digits to the GUI.
     fPlotDigitsHits = new TPlotDigitsHits();
     CP::TEventDisplay::Get().GUI().GetDrawXDigitsButton()

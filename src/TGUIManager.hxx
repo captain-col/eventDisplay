@@ -55,6 +55,9 @@ public:
     TGButton* GetDrawTimeChargeButton() {return fDrawTimeChargeButton;}
 
     /// Get the button to draw the U plane digits.
+    TGButton* GetFitTimeChargeButton() {return fFitTimeChargeButton;}
+
+    /// Get the button to draw the U plane digits.
     TGButton* GetShowXTimeChargeButton() {return fShowXTimeChargeButton;}
 
     /// Get the button to draw the U plane digits.
@@ -115,6 +118,7 @@ private:
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
     TGButton* fDrawTimeChargeButton;
+    TGButton* fFitTimeChargeButton;
     TGButton* fShowXTimeChargeButton;
     TGButton* fShowVTimeChargeButton;
     TGButton* fShowUTimeChargeButton;

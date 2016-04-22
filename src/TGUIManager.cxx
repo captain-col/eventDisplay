@@ -103,6 +103,14 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(textButton, layoutHints);
     textButton->SetToolTipText("Draw the hit times and charges.");
     
+    textButton = new TGTextButton(hf, "Fit electron lifetime");
+    fFitTimeChargeButton = textButton;
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    textButton->SetToolTipText("Fit the currently show hits.");
+    
     checkButton = new TGCheckButton(hf,"Show X Hits");
     fShowXTimeChargeButton = checkButton;
     checkButton->SetOn();

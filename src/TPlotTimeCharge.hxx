@@ -22,6 +22,9 @@ public:
     /// Draw the charge vs time in a graph.
     void DrawTimeCharge();
 
+    /// Fit the charge vs time in a graph.
+    void FitTimeCharge();
+
 private:
 
     /// The graphs...
