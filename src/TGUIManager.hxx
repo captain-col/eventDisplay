@@ -60,6 +60,9 @@ public:
     /// Get the button to draw the U plane digits.
     TGButton* GetDrawUDigitsButton() {return fDrawUDigitsButton;}
 
+    /// Get the button to draw the U plane digits.
+    TGButton* GetDrawTimeChargeButton() {return fDrawTimeChargeButton;}
+
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowRawDigitsButton() {return fShowRawDigitsButton;}
 
@@ -105,6 +108,7 @@ private:
     TGButton* fDrawUDigitsButton;
     TGButton* fDrawVDigitsButton;
     TGButton* fDrawXDigitsButton;
+    TGButton* fDrawTimeChargeButton;
     TGButton* fShowRawDigitsButton;
     TGButton* fShowFullDigitsButton;
     TGButton* fShowFitsHitsButton;

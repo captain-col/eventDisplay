@@ -1,6 +1,7 @@
 #include "TEventDisplay.hxx"
 #include "TGUIManager.hxx"
 #include "TPlotDigitsHits.hxx"
+#include "TPlotTimeCharge.hxx"
 #include "TEventChangeManager.hxx"
 #include "TFindResultsHandler.hxx"
 #include "TTrajectoryChangeHandler.hxx"
@@ -49,6 +50,14 @@ void CP::TEventDisplay::Init() {
     fEventChangeManager->AddUpdateHandler(new TFitChangeHandler());
     fEventChangeManager->AddUpdateHandler(new TPMTChangeHandler());
 
+    // Connect the class to draw the times and charges to the GUI.
+    fPlotTimeCharge = new TPlotTimeCharge();
+    CP::TEventDisplay::Get().GUI().GetDrawTimeChargeButton()
+        ->Connect("Clicked()",
+                  "CP::TPlotTimeCharge", 
+                  fPlotTimeCharge,
+                  "DrawTimeCharge()");
+    
     // Connect the class to draw digits to the GUI.
     fPlotDigitsHits = new TPlotDigitsHits();
     CP::TEventDisplay::Get().GUI().GetDrawXDigitsButton()

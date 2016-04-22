@@ -93,6 +93,17 @@ void CP::TGUIManager::MakeControlTab() {
     fShowG4HitsButton = checkButton;
 
     /////////////////////
+    // Button to draw the hit times and charges.
+    /////////////////////
+    textButton = new TGTextButton(hf, "Times and Charges");
+    fDrawTimeChargeButton = textButton;
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    textButton->SetToolTipText("Draw the hit times and charges.");
+    
+    /////////////////////
     // Buttons to draw the digits.
     /////////////////////
     textButton = new TGTextButton(hf, "Draw X Digits");
