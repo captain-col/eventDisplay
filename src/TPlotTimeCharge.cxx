@@ -36,94 +36,49 @@ CP::TPlotTimeCharge::~TPlotTimeCharge() {}
 void CP::TPlotTimeCharge::FitTimeCharge() {
     TCanvas* canvas = (TCanvas*) gROOT->FindObject("canvasTimeCharge");
     if (!canvas) return;
+
+    // If the x plane hits are drawn, fit them.  Then try the V and U planes.
+    TGraphErrors* graph = fXPlaneGraph;
+    if (!graph) graph = fVPlaneGraph;
+    if (!graph) graph = fUPlaneGraph;
+    if (!graph) {
+        CaptError("No hits to fit");
+        return;
+    }
+
+    // Determine the range of the fit.  This fits the hits that are in the
+    // zoomed histogram.
     double xMin = canvas->GetUxmin();
     double xMax = canvas->GetUxmax();
-    // If the x plane hits are drawn, fit them.
-    if (fXPlaneGraph) {
-        // Find the range of "normalizations to use".
-        int closestPoint = 1E+10;
-        int closestNorm = 10000;
-        for (int i= 0; i< fXPlaneGraph->GetN(); ++i) {
-            double x, y;
-            fXPlaneGraph->GetPoint(i,x,y);
-            if (x<xMin) continue;
-            if (x<closestPoint) {
-                closestPoint = x;
-                closestNorm = y;
-            }
+    fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/20.0,
+                                    xMax-(xMax-xMin)/20.0);
+
+    // Find the range of "normalizations to use".
+    int closestPoint = 1E+10;
+    int closestNorm = 10000;
+    for (int i= 0; i< graph->GetN(); ++i) {
+        double x, y;
+        graph->GetPoint(i,x,y);
+        if (x<xMin) continue;
+        if (x<closestPoint) {
+            closestPoint = x;
+            closestNorm = y;
         }
-        fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/10.0,
-                                        xMax-(xMax-xMin)/10.0);
-
-        fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
-        // Limit the range of electron lifetimes to fit (5us to 10 ms)
-        fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
-        // Fix the offset of the fit start to the beginning of the fit range.
-        fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
-        // Limit the range of normalizations
-        fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
-        fXPlaneGraph->Fit(fElectronLifeFunction,"R,W,ROB=0.7");
-        gPad->Update();
-        return;
     }
+    
+    // Set the initial parameter values.
+    fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
+    // Limit the range of electron lifetimes to fit (5us to 10 ms)
+    fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
+    // Fix the offset of the fit start to the beginning of the fit range.
+    fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
+    // Limit the range of normalizations
+    fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
 
-    // There wasn't an x graph, so try the V.
-    if (fVPlaneGraph) {
-        // Find the range of "normalizations to use".
-        int closestPoint = 1E+10;
-        int closestNorm = 10000;
-        for (int i= 0; i< fVPlaneGraph->GetN(); ++i) {
-            double x, y;
-            fVPlaneGraph->GetPoint(i,x,y);
-            if (x<xMin) continue;
-            if (x<closestPoint) {
-                closestPoint = x;
-                closestNorm = y;
-            }
-        }
-        fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/10.0,
-                                        xMax-(xMax-xMin)/10.0);
+    // Do the fit!
+    graph->Fit(fElectronLifeFunction,"R,ROB=0.85");
 
-        fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
-        // Limit the range of electron lifetimes to fit (5us to 10 ms)
-        fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
-        // Fix the offset of the fit start to the beginning of the fit range.
-        fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
-        // Limit the range of normalizations
-        fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
-        fVPlaneGraph->Fit(fElectronLifeFunction,"R,W,ROB=0.7");
-        gPad->Update();
-        return;
-    }
-
-    // There wasn't a V graph, so try the U.
-    if (fUPlaneGraph) {
-        // Find the range of "normalizations to use".
-        int closestPoint = 1E+10;
-        int closestNorm = 10000;
-        for (int i= 0; i< fUPlaneGraph->GetN(); ++i) {
-            double x, y;
-            fUPlaneGraph->GetPoint(i,x,y);
-            if (x<xMin) continue;
-            if (x<closestPoint) {
-                closestPoint = x;
-                closestNorm = y;
-            }
-        }
-        fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/10.0,
-                                        xMax-(xMax-xMin)/10.0);
-
-        fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
-        // Limit the range of electron lifetimes to fit (5us to 10 ms)
-        fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
-        // Fix the offset of the fit start to the beginning of the fit range.
-        fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
-        // Limit the range of normalizations
-        fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
-        fUPlaneGraph->Fit(fElectronLifeFunction,"R,W,ROB=0.7");
-        gPad->Update();
-        return;
-    }
+    gPad->Update();
 }
 
 void CP::TPlotTimeCharge::DrawTimeCharge() {
