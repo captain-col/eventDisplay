@@ -10,6 +10,7 @@
 #include <TEventFolder.hxx>
 #include <CaptGeomId.hxx>
 #include <HEPUnits.hxx>
+#include <TUnitsTable.hxx>
 
 #include <TCanvas.h>
 #include <TPad.h>
@@ -17,25 +18,80 @@
 #include <TLegend.h>
 #include <TH1F.h>
 #include <TF1.h>
+#include <TVirtualFitter.h>
+#include <TFitResultPtr.h>
+#include <TFitResult.h>
 
 #include <iostream>
 #include <sstream>
 
 CP::TPlotTimeCharge::TPlotTimeCharge()
     : fXPlaneGraph(NULL), fVPlaneGraph(NULL), fUPlaneGraph(NULL),
-      fGraphLegend(NULL) {
-    fElectronLifeFunction = new TF1("electronLifeFunction",
-                                    "[2]*exp(-(x-[1])/[0])");
-    fElectronLifeFunction->SetParName(0,"Electron Lifetime");
-    fElectronLifeFunction->SetParName(1,"Time Offset");
-    fElectronLifeFunction->SetParName(2,"Normalization");
+      fGraphLegend(NULL), fElectronLifeFunction(NULL) {
 }
 
 CP::TPlotTimeCharge::~TPlotTimeCharge() {}
 
+namespace {
+    
+    void PlotTimeChargeFitFCN(Int_t &npar, Double_t * /*gin*/, Double_t &f,
+                              Double_t *u, Int_t /*flag*/) {
+        // This implements a maximum goodness fitter.  This uses a goodness
+        // fuction of exp(((x-f)/sigma(x))^2) which is just a Gaussian.  This
+        // has the nice feature that it behaves like chi-squared for points
+        // that are close to the expected value, but ignores points that are
+        // far away.  It has the downside that it can have local minima so the
+        // starting point values need to be fairly close.
+        Double_t cu,eu,ey,fu,fsum;
+        Double_t x[1];
+        Int_t bin, npfits=0;
+        
+        TVirtualFitter *grFitter = TVirtualFitter::GetFitter();
+        TGraph *gr     = (TGraph*)grFitter->GetObjectFit();
+        TF1 *f1   = (TF1*)grFitter->GetUserFunc();
+        Int_t n        = gr->GetN();
+        Double_t *gx   = gr->GetX();
+        Double_t *gy   = gr->GetY();
+        //Double_t fxmin = f1->GetXmin();
+        //Double_t fxmax = f1->GetXmax();
+        npar           = f1->GetNpar();
+        
+        f      = 0;
+        for (bin=0;bin<n;bin++) {
+            f1->InitArgs(x,u); // Inside since TF1::Derivative calls InitArgs.
+            x[0] = gx[bin];
+            if (!f1->IsInside(x)) continue;
+            cu   = gy[bin];
+            TF1::RejectPoint(kFALSE);
+            fu   = f1->EvalPar(x,u);
+            if (TF1::RejectedPoint()) {
+                continue;
+            }
+            fsum = (cu-fu);
+            npfits++;
+            if (fsum < 0) {
+                ey = gr->GetErrorYhigh(bin);
+            }
+            else {
+                ey = gr->GetErrorYlow(bin);
+            }
+            if (ey < 0)  ey  = 0;
+            eu = ey*ey;
+            if (eu <= 0) eu = 1;
+            f += 1.0 - exp(-0.5*fsum*fsum/eu);
+        }
+        f1->SetNumberFitPoints(npfits);
+    }
+}
+
 void CP::TPlotTimeCharge::FitTimeCharge() {
     TCanvas* canvas = (TCanvas*) gROOT->FindObject("canvasTimeCharge");
     if (!canvas) return;
+    
+    // Determine the range of the fit.  This fits the hits that are in the
+    // zoomed histogram.
+    double xMin = canvas->GetUxmin();
+    double xMax = canvas->GetUxmax();
 
     // If the x plane hits are drawn, fit them.  Then try the V and U planes.
     TGraphErrors* graph = fXPlaneGraph;
@@ -46,15 +102,8 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
         return;
     }
 
-    // Determine the range of the fit.  This fits the hits that are in the
-    // zoomed histogram.
-    double xMin = canvas->GetUxmin();
-    double xMax = canvas->GetUxmax();
-    fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/20.0,
-                                    xMax-(xMax-xMin)/20.0);
-
     // Find the range of "normalizations to use".
-    int closestPoint = 1E+10;
+    double closestPoint = 1E+10;
     int closestNorm = 10000;
     for (int i= 0; i< graph->GetN(); ++i) {
         double x, y;
@@ -65,19 +114,36 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
             closestNorm = y;
         }
     }
-    
+
+    if (fElectronLifeFunction) delete fElectronLifeFunction;
+    std::ostringstream functionString;
+    functionString << "[1]*exp(-(x-" << xMin << ")/[0])";
+        
+    fElectronLifeFunction = new TF1("electronLifeFunction",
+                                    functionString.str().c_str());
+    fElectronLifeFunction->SetParName(0,"Electron Lifetime");
+    fElectronLifeFunction->SetParName(1,"Normalization");
+    fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/20.0,
+                                    xMax-(xMax-xMin)/20.0);
+
     // Set the initial parameter values.
-    fElectronLifeFunction->SetParameters(20.0, xMin, closestNorm);
-    // Limit the range of electron lifetimes to fit (5us to 10 ms)
-    fElectronLifeFunction->SetParLimits(0, 5.0, 10000.0);
-    // Fix the offset of the fit start to the beginning of the fit range.
-    fElectronLifeFunction->SetParLimits(1, xMin, xMin-1.0);
+    fElectronLifeFunction->SetParameters(20.0, closestNorm);
+    // Limit the range of electron lifetimes to fit (5us to 6 ms)
+    fElectronLifeFunction->SetParLimits(0, 5.0, 6000.0);
     // Limit the range of normalizations
-    fElectronLifeFunction->SetParLimits(2,0.7*closestNorm,2.0*closestNorm);
+    fElectronLifeFunction->SetParLimits(1,0.7*closestNorm,2.0*closestNorm);
 
     // Do the fit!
-    graph->Fit(fElectronLifeFunction,"R,ROB=0.85");
-
+    TVirtualFitter* fitter = TVirtualFitter::Fitter(graph);
+    fitter->SetFCN(PlotTimeChargeFitFCN);
+    graph->Fit(fElectronLifeFunction,"S",
+               "",
+               xMin+(xMax-xMin)/20.0,
+               xMax-(xMax-xMin)/20.0);
+    CaptLog("Fitted lifetime: "
+            << unit::AsString(
+                unit::microsecond*fElectronLifeFunction->GetParameter(0),
+                "time"));
     gPad->Update();
 }
 
@@ -110,10 +176,18 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
 
     // Fill the graph for the U hits
     points = 0;
+    TCanvas* uCanvas = (TCanvas*) gROOT->FindObject("canvasUDigits");
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsUWire((*h)->GetGeomId())) continue;
         if (!drawUHits) continue;
+        if (uCanvas) {
+            double xMin = uCanvas->GetUxmin();
+            double xMax = uCanvas->GetUxmax();
+            double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
+            if (wire < xMin) continue;
+            if (wire > xMax) continue;
+        }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -135,10 +209,18 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
 
     // Fill the graph for the V hits.
     points = 0;
+    TCanvas* vCanvas = (TCanvas*) gROOT->FindObject("canvasUDigits");
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsVWire((*h)->GetGeomId())) continue;
         if (!drawVHits) continue;
+        if (vCanvas) {
+            double xMin = vCanvas->GetUxmin();
+            double xMax = vCanvas->GetUxmax();
+            double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
+            if (wire < xMin) continue;
+            if (wire > xMax) continue;
+        }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -160,10 +242,18 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     
     // Fill the graph for the X hits.
     points=0;
+    TCanvas* xCanvas = (TCanvas*) gROOT->FindObject("canvasXDigits");
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsXWire((*h)->GetGeomId())) continue;
         if (!drawXHits) continue;
+        if (xCanvas) {
+            double xMin = xCanvas->GetUxmin();
+            double xMax = xCanvas->GetUxmax();
+            double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
+            if (wire < xMin) continue;
+            if (wire > xMax) continue;
+        }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -190,6 +280,7 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     }
     canvas->SetTopMargin(0.07);
     canvas->SetRightMargin(0.04);
+    canvas->cd();
     
     if (!fXPlaneGraph && !fVPlaneGraph && !fUPlaneGraph) return;
     
@@ -201,9 +292,9 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     titleStream << ";Time #pm #Deltat_{rms} (#mus)";
     titleStream << ";Charge #pm #sigma (electrons)";
         
-    TH1F* frame = gPad->DrawFrame(minTime/unit::microsecond,
+    TH1F* frame = gPad->DrawFrame(minTime/unit::microsecond-5,
                                   minCharge,
-                                  maxTime/unit::microsecond,
+                                  maxTime/unit::microsecond+5,
                                   maxCharge,
                                   titleStream.str().c_str());
     frame->GetYaxis()->SetTitleOffset(1.5);
