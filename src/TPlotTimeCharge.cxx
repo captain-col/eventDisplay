@@ -16,11 +16,13 @@
 #include <TPad.h>
 #include <TGraphErrors.h>
 #include <TLegend.h>
+#include <TLegendEntry.h>
 #include <TH1F.h>
 #include <TF1.h>
 #include <TVirtualFitter.h>
 #include <TFitResultPtr.h>
 #include <TFitResult.h>
+#include <TList.h>
 
 #include <iostream>
 #include <sstream>
@@ -37,11 +39,11 @@ namespace {
     void PlotTimeChargeFitFCN(Int_t &npar, Double_t * /*gin*/, Double_t &f,
                               Double_t *u, Int_t /*flag*/) {
         // This implements a maximum goodness fitter.  This uses a goodness
-        // fuction of exp(((x-f)/sigma(x))^2) which is just a Gaussian.  This
-        // has the nice feature that it behaves like chi-squared for points
-        // that are close to the expected value, but ignores points that are
-        // far away.  It has the downside that it can have local minima so the
-        // starting point values need to be fairly close.
+        // fuction of exp(0.5*((x-f)/sigma(x))^2) which is just a Gaussian.
+        // This has the nice feature that it behaves like chi-squared for
+        // points that are close to the expected value, but ignores points
+        // that are far away.  It has the downside that it can have local
+        // minima so the starting point values need to be fairly close.
         Double_t cu,eu,ey,fu,fsum;
         Double_t x[1];
         Int_t bin, npfits=0;
@@ -136,14 +138,39 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     // Do the fit!
     TVirtualFitter* fitter = TVirtualFitter::Fitter(graph);
     fitter->SetFCN(PlotTimeChargeFitFCN);
-    graph->Fit(fElectronLifeFunction,"S",
-               "",
-               xMin+(xMax-xMin)/20.0,
-               xMax-(xMax-xMin)/20.0);
-    CaptLog("Fitted lifetime: "
-            << unit::AsString(
-                unit::microsecond*fElectronLifeFunction->GetParameter(0),
-                "time"));
+    TFitResultPtr result = graph->Fit(fElectronLifeFunction,"su","",
+                                      xMin+(xMax-xMin)/20.0,
+                                      xMax-(xMax-xMin)/20.0);
+    if (!fGraphLegend || !fGraphLegend->GetListOfPrimitives()) {
+        gPad->Update();
+        return;
+    }
+    std::ostringstream lifeLabel;
+    lifeLabel << "Life: "
+              << unit::AsString(unit::microsecond*result->Parameter(0),
+                                unit::microsecond*result->Error(0), "time");
+    std::ostringstream normLabel;
+    normLabel << "Norm: "
+              << unit::AsString(result->Parameter(1),
+                                result->Error(1), "charge");
+    bool foundLifeLabel = false;
+    TIter entries(fGraphLegend->GetListOfPrimitives());
+    while (TObject *o = entries()) {
+        TLegendEntry* entry = dynamic_cast<TLegendEntry*>(o);
+        std::string label(entry->GetLabel());
+        if (label.find("Life:") != std::string::npos) {
+            foundLifeLabel=true;
+            entry->SetLabel(lifeLabel.str().c_str());
+        }
+        if (label.find("Norm:") != std::string::npos) {
+            entry->SetLabel(normLabel.str().c_str());
+        }
+    }
+    if (!foundLifeLabel) {
+        fGraphLegend->AddEntry((TObject*)NULL,lifeLabel.str().c_str(),"");
+        fGraphLegend->AddEntry((TObject*)NULL,normLabel.str().c_str(),"");
+    }
+                            
     gPad->Update();
 }
 
@@ -291,11 +318,11 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
                 << ")";
     titleStream << ";Time #pm #Deltat_{rms} (#mus)";
     titleStream << ";Charge #pm #sigma (electrons)";
-        
+
     TH1F* frame = gPad->DrawFrame(minTime/unit::microsecond-5,
                                   minCharge,
                                   maxTime/unit::microsecond+5,
-                                  maxCharge,
+                                  1.05*maxCharge,
                                   titleStream.str().c_str());
     frame->GetYaxis()->SetTitleOffset(1.5);
     frame->GetXaxis()->SetTitleOffset(1.2);
@@ -320,7 +347,8 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         fXPlaneGraph->Draw("P");
     }
 
-    fGraphLegend = new TLegend(0.87,0.85,0.97,0.95);
+    fGraphLegend = new TLegend(0.15,0.88,0.90,0.92);
+    fGraphLegend->SetNColumns(5);
     if (fXPlaneGraph) fGraphLegend->AddEntry(fXPlaneGraph,"X Hits","p");
     if (fVPlaneGraph) fGraphLegend->AddEntry(fVPlaneGraph,"V Hits","p");
     if (fUPlaneGraph) fGraphLegend->AddEntry(fUPlaneGraph,"U Hits","p");
