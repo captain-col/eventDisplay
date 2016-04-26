@@ -231,24 +231,43 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     double chargeUnc[maxPoints];
     int points;
 
+    // Check to see if the hits have been plotted on time vs wire.
+    TCanvas* canvasUDigits = (TCanvas*) gROOT->FindObject("canvasUDigits");
+    TCanvas* canvasVDigits = (TCanvas*) gROOT->FindObject("canvasVDigits");
+    TCanvas* canvasXDigits = (TCanvas*) gROOT->FindObject("canvasXDigits");
+
+    // Find the time range shown on the time vs wire.
+    double minDigitTime = 1E+22;
+    double maxDigitTime = -1E+22;
+    if (!canvasUDigits && !canvasVDigits && !canvasXDigits) {
+        minDigitTime = -1E+22;
+        maxDigitTime = 1E+22;
+    }
+    if (canvasUDigits) {
+        minDigitTime = std::min(canvasUDigits->GetUymin(),minDigitTime);
+        maxDigitTime = std::max(canvasUDigits->GetUymax(),maxDigitTime);
+    }
+    if (canvasVDigits) {
+        minDigitTime = std::min(canvasVDigits->GetUymin(),minDigitTime);
+        maxDigitTime = std::max(canvasVDigits->GetUymax(),maxDigitTime);
+    }
+    if (canvasXDigits) {
+        minDigitTime = std::min(canvasXDigits->GetUymin(),minDigitTime);
+        maxDigitTime = std::max(canvasXDigits->GetUymax(),maxDigitTime);
+    }
+    
     // Fill the graph for the U hits
     points = 0;
-    TCanvas* uCanvas = (TCanvas*) gROOT->FindObject("canvasUDigits");
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsUWire((*h)->GetGeomId())) continue;
         if (!drawUHits) continue;
-        if (uCanvas) {
-            double xMin = uCanvas->GetUxmin();
-            double xMax = uCanvas->GetUxmax();
+        if ((*h)->GetTime()/unit::microsecond < minDigitTime) continue;
+        if ((*h)->GetTime()/unit::microsecond > maxDigitTime) continue;
+        if (canvasUDigits) {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
-            if (wire < xMin) continue;
-            if (wire > xMax) continue;
-            double yMin = uCanvas->GetUymin();
-            double yMax = uCanvas->GetUymax();
-            double y = (*h)->GetTime()/unit::microsecond;
-            if (y < yMin) continue;
-            if (y > yMax) continue;
+            if (wire < canvasUDigits->GetUxmin()) continue;
+            if (wire > canvasUDigits->GetUxmax()) continue;
         }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
@@ -271,22 +290,16 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
 
     // Fill the graph for the V hits.
     points = 0;
-    TCanvas* vCanvas = (TCanvas*) gROOT->FindObject("canvasUDigits");
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsVWire((*h)->GetGeomId())) continue;
         if (!drawVHits) continue;
-        if (vCanvas) {
-            double xMin = vCanvas->GetUxmin();
-            double xMax = vCanvas->GetUxmax();
+        if ((*h)->GetTime()/unit::microsecond < minDigitTime) continue;
+        if ((*h)->GetTime()/unit::microsecond > maxDigitTime) continue;
+        if (canvasVDigits) {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
-            if (wire < xMin) continue;
-            if (wire > xMax) continue;
-            double yMin = vCanvas->GetUymin();
-            double yMax = vCanvas->GetUymax();
-            double y = (*h)->GetTime()/unit::microsecond;
-            if (y < yMin) continue;
-            if (y > yMax) continue;
+            if (wire < canvasVDigits->GetUxmin()) continue;
+            if (wire > canvasVDigits->GetUxmax()) continue;
         }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
@@ -309,22 +322,16 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     
     // Fill the graph for the X hits.
     points=0;
-    TCanvas* xCanvas = (TCanvas*) gROOT->FindObject("canvasXDigits");
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsXWire((*h)->GetGeomId())) continue;
         if (!drawXHits) continue;
-        if (xCanvas) {
-            double xMin = xCanvas->GetUxmin();
-            double xMax = xCanvas->GetUxmax();
+        if ((*h)->GetTime()/unit::microsecond < minDigitTime) continue;
+        if ((*h)->GetTime()/unit::microsecond > maxDigitTime) continue;
+        if (canvasXDigits) {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
-            if (wire < xMin) continue;
-            if (wire > xMax) continue;
-            double yMin = xCanvas->GetUymin();
-            double yMax = xCanvas->GetUymax();
-            double y = (*h)->GetTime()/unit::microsecond;
-            if (y < yMin) continue;
-            if (y > yMax) continue;
+            if (wire < canvasXDigits->GetUxmin()) continue;
+            if (wire > canvasXDigits->GetUxmax()) continue;
         }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
@@ -354,7 +361,10 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     canvas->SetRightMargin(0.04);
     canvas->cd();
     
-    if (!fXPlaneGraph && !fVPlaneGraph && !fUPlaneGraph) return;
+    if (!fXPlaneGraph && !fVPlaneGraph && !fUPlaneGraph) {
+        gPad->Update();
+        return;
+    }
     
     std::ostringstream titleStream;
     titleStream << "Hit Times and Charges"
