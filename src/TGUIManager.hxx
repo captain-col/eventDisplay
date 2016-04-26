@@ -81,6 +81,9 @@ public:
     /// Get the button to select if all digit samples are drawn.
     TGButton* GetShowFullDigitsButton() {return fShowFullDigitsButton;}
 
+    /// Get the button to select if any digit samples are drawn.
+    TGButton* GetShowDigitSamplesButton() {return fShowDigitSamplesButton;}
+
     /// Get the check button selecting if hits associated with shown
     /// reconstruction objects should be drawn.
     TGButton* GetShowFitsHitsButton() {return fShowFitsHitsButton;}
@@ -127,6 +130,7 @@ private:
     TGButton* fDrawXDigitsButton;
     TGButton* fShowRawDigitsButton;
     TGButton* fShowFullDigitsButton;
+    TGButton* fShowDigitSamplesButton;
     TGButton* fShowFitsHitsButton;
     TGButton* fShowConstituentClustersButton;
     TGButton* fShowClusterUncertaintyButton;

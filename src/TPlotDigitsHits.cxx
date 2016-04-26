@@ -124,6 +124,12 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
     
+    // True if the sample values should be filled into the histogram (slow)
+    bool showDigitSamples = true;
+    if (!CP::TEventDisplay::Get().GUI().GetShowDigitSamplesButton()->IsOn()) {
+        showDigitSamples = false;
+    }
+
     if (!drift) {
         CaptLog("No drift signals for this event"); 
         return;
@@ -199,7 +205,10 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
               << "." << event->GetContext().GetEvent() << ":";
 
     int overSampling = 1.0;
-    if (!CP::TEventDisplay::Get().GUI().GetShowFullDigitsButton()->IsOn()) {
+    if (!CP::TEventDisplay::Get().GUI().GetShowDigitSamplesButton()->IsOn()) {
+        overSampling = 50.0;
+    }
+    else if (!CP::TEventDisplay::Get().GUI().GetShowFullDigitsButton()->IsOn()){
         overSampling = 20.0;
     }
     signalBins /= overSampling;
@@ -276,6 +285,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             wireTimeStep=chanCalib.GetTimeConstant(digit->GetChannelId(),1);
         }
         // Plot the digits for this channel.
+        if (!showDigitSamples) continue;
         double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
         for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
             double tbin = GetDigitFirstTime(digit) 

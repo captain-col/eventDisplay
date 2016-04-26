@@ -186,6 +186,16 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowFullDigitsButton = checkButton;
 
+    checkButton = new TGCheckButton(hf,"Show the digit samples (off is fast)");
+    checkButton->SetToolTipText(
+        "Show the digit samples.  If off, the only the hits are drawn (fast).");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    checkButton->SetOn();
+    hf->AddFrame(checkButton, layoutHints);
+    fShowDigitSamplesButton = checkButton;
+    
     /////////////////////
     // Buttons to control how reconstruction objects are drawn.
     /////////////////////
