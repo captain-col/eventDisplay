@@ -47,6 +47,7 @@ namespace {
         Double_t cu,eu,ey,fu,fsum;
         Double_t x[1];
         Int_t bin, npfits=0;
+        // std::cout << "USER FCN " << std::endl;
         
         TVirtualFitter *grFitter = TVirtualFitter::GetFitter();
         TGraph *gr     = (TGraph*)grFitter->GetObjectFit();
@@ -54,11 +55,8 @@ namespace {
         Int_t n        = gr->GetN();
         Double_t *gx   = gr->GetX();
         Double_t *gy   = gr->GetY();
-        //Double_t fxmin = f1->GetXmin();
-        //Double_t fxmax = f1->GetXmax();
-        npar           = f1->GetNpar();
-        
-        f      = 0;
+        npar = f1->GetNpar();
+        f = 0;
         for (bin=0;bin<n;bin++) {
             f1->InitArgs(x,u); // Inside since TF1::Derivative calls InitArgs.
             x[0] = gx[bin];
@@ -94,6 +92,8 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     // zoomed histogram.
     double xMin = canvas->GetUxmin();
     double xMax = canvas->GetUxmax();
+    double yMin = canvas->GetUymin();
+    double yMax = canvas->GetUymax();
 
     // If the x plane hits are drawn, fit them.  Then try the V and U planes.
     TGraphErrors* graph = fXPlaneGraph;
@@ -102,6 +102,36 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     if (!graph) {
         CaptError("No hits to fit");
         return;
+    }
+
+    
+    // Find the time zero for the fit. 
+    double timeZero = xMin;
+    double maxCharge = 0.0;
+    for (int i= 0; i< graph->GetN(); ++i) {
+        double x, y;
+        graph->GetPoint(i,x,y);
+        if (y > yMax) continue;
+        if (y < maxCharge) continue;
+        timeZero = x;
+        maxCharge = y;
+    }
+
+    double minCharge = maxCharge;
+    for (int i= 0; i< graph->GetN(); ++i) {
+        double x, y;
+        graph->GetPoint(i,x,y);
+        if (y > minCharge) continue;
+        minCharge = y;
+    }
+
+    for (int i= 0; i< graph->GetN(); ++i) {
+        double x, y;
+        graph->GetPoint(i,x,y);
+        if (maxCharge < y) {
+            timeZero = x;
+            maxCharge = y;
+        }
     }
 
     // Find the range of "normalizations to use".
@@ -119,7 +149,7 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
 
     if (fElectronLifeFunction) delete fElectronLifeFunction;
     std::ostringstream functionString;
-    functionString << "[1]*exp(-(x-" << xMin << ")/[0])";
+    functionString << "[1]*exp(-(x-" << timeZero << ")/[0])";
         
     fElectronLifeFunction = new TF1("electronLifeFunction",
                                     functionString.str().c_str());
@@ -133,7 +163,7 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     // Limit the range of electron lifetimes to fit (5us to 6 ms)
     fElectronLifeFunction->SetParLimits(0, 5.0, 6000.0);
     // Limit the range of normalizations
-    fElectronLifeFunction->SetParLimits(1,0.7*closestNorm,2.0*closestNorm);
+    fElectronLifeFunction->SetParLimits(1,minCharge,maxCharge);
 
     // Do the fit!
     TVirtualFitter* fitter = TVirtualFitter::Fitter(graph);
@@ -214,6 +244,11 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
             if (wire < xMin) continue;
             if (wire > xMax) continue;
+            double yMin = uCanvas->GetUymin();
+            double yMax = uCanvas->GetUymax();
+            double y = (*h)->GetTime()/unit::microsecond;
+            if (y < yMin) continue;
+            if (y > yMax) continue;
         }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
@@ -247,6 +282,11 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
             if (wire < xMin) continue;
             if (wire > xMax) continue;
+            double yMin = vCanvas->GetUymin();
+            double yMax = vCanvas->GetUymax();
+            double y = (*h)->GetTime()/unit::microsecond;
+            if (y < yMin) continue;
+            if (y > yMax) continue;
         }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
@@ -280,6 +320,11 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
             if (wire < xMin) continue;
             if (wire > xMax) continue;
+            double yMin = xCanvas->GetUymin();
+            double yMax = xCanvas->GetUymax();
+            double y = (*h)->GetTime()/unit::microsecond;
+            if (y < yMin) continue;
+            if (y > yMax) continue;
         }
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
