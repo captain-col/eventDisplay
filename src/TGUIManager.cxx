@@ -73,6 +73,37 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowFitsButton = checkButton;
 
+    /////////////////////
+    // Buttons to control how reconstruction objects are drawn.
+    /////////////////////
+
+    checkButton = new TGCheckButton(hf,"Show Recon Object Hits");
+    checkButton->SetToolTipText(
+        "Show the hits associated with the draw reconstructed objects.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowFitsHitsButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show Recon Object Clusters");
+    checkButton->SetToolTipText(
+        "Show the constituent clusters for draw reconstructed objects.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowConstituentClustersButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show cluster uncertainty, not moments");
+    checkButton->SetToolTipText(
+        "Show the cluster uncertainty, not the cluster charge moments.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowClusterUncertaintyButton = checkButton;
+
     checkButton = new TGCheckButton(hf,"Show Trajectories");
     checkButton->SetToolTipText(
         "Show the GEANT4 trajectories and trajectory points.");
@@ -192,41 +223,9 @@ void CP::TGUIManager::MakeControlTab() {
     checkButton->SetTextJustify(36);
     checkButton->SetMargins(0,0,0,0);
     checkButton->SetWrapLength(-1);
-    checkButton->SetOn();
     hf->AddFrame(checkButton, layoutHints);
     fShowDigitSamplesButton = checkButton;
     
-    /////////////////////
-    // Buttons to control how reconstruction objects are drawn.
-    /////////////////////
-
-    checkButton = new TGCheckButton(hf,"Show Recon Object Hits");
-    checkButton->SetToolTipText(
-        "Show the hits associated with the draw reconstructed objects.");
-    checkButton->SetTextJustify(36);
-    checkButton->SetMargins(0,0,0,0);
-    checkButton->SetWrapLength(-1);
-    hf->AddFrame(checkButton, layoutHints);
-    fShowFitsHitsButton = checkButton;
-
-    checkButton = new TGCheckButton(hf,"Show Recon Object Clusters");
-    checkButton->SetToolTipText(
-        "Show the constituent clusters for draw reconstructed objects.");
-    checkButton->SetTextJustify(36);
-    checkButton->SetMargins(0,0,0,0);
-    checkButton->SetWrapLength(-1);
-    hf->AddFrame(checkButton, layoutHints);
-    fShowConstituentClustersButton = checkButton;
-
-    checkButton = new TGCheckButton(hf,"Show cluster uncertainty, not moments");
-    checkButton->SetToolTipText(
-        "Show the cluster uncertainty, not the cluster charge moments.");
-    checkButton->SetTextJustify(36);
-    checkButton->SetMargins(0,0,0,0);
-    checkButton->SetWrapLength(-1);
-    hf->AddFrame(checkButton, layoutHints);
-    fShowClusterUncertaintyButton = checkButton;
-
     // Do the final layout and mapping.
     mainFrame->AddFrame(hf, layoutHints);
     mainFrame->MapSubwindows();

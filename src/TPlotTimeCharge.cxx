@@ -47,7 +47,6 @@ namespace {
         Double_t cu,eu,ey,fu,fsum;
         Double_t x[1];
         Int_t bin, npfits=0;
-        // std::cout << "USER FCN " << std::endl;
         
         TVirtualFitter *grFitter = TVirtualFitter::GetFitter();
         TGraph *gr     = (TGraph*)grFitter->GetObjectFit();
@@ -103,7 +102,6 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
         CaptError("No hits to fit");
         return;
     }
-
     
     // Find the time zero for the fit. 
     double timeZero = xMin;
@@ -124,7 +122,8 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
         if (y > minCharge) continue;
         minCharge = y;
     }
-
+    if (minCharge < 1000) minCharge = 1000;
+    
     for (int i= 0; i< graph->GetN(); ++i) {
         double x, y;
         graph->GetPoint(i,x,y);
@@ -158,19 +157,56 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/20.0,
                                     xMax-(xMax-xMin)/20.0);
 
-    // Set the initial parameter values.
-    fElectronLifeFunction->SetParameters(20.0, closestNorm);
     // Limit the range of electron lifetimes to fit (5us to 6 ms)
     fElectronLifeFunction->SetParLimits(0, 5.0, 6000.0);
     // Limit the range of normalizations
     fElectronLifeFunction->SetParLimits(1,minCharge,maxCharge);
 
-    // Do the fit!
+    // Set the initial parameter values.
     TVirtualFitter* fitter = TVirtualFitter::Fitter(graph);
     fitter->SetFCN(PlotTimeChargeFitFCN);
+    fitter->SetObjectFit(graph);
+    fitter->SetUserFunc(fElectronLifeFunction);
+
+    const double minLife = 5.0; // microseconds;
+    const double maxLife = 6000.0; //microseconds;
+
+    double bestValue = 1E+30;
+    double bestLife = 0.0;
+    double bestNorm = 0.0;
+
+    double chargeStep = std::log(maxCharge/minCharge)/100.0;
+    for (double logCharge = std::log(minCharge);
+         logCharge < std::log(maxCharge);
+         logCharge += chargeStep) {
+        double minAngle = std::atan(1.0/maxLife);
+        double maxAngle = std::atan(1.0/minLife);
+        double angleStep = (maxAngle-minAngle)/100.0;
+        for (double angle = minAngle; angle<maxAngle; angle += angleStep) {
+            int npar = 2;
+            double u[2];
+            double value;
+            u[0] = 1.0/std::tan(angle);
+            u[1] = std::exp(logCharge);
+            PlotTimeChargeFitFCN(npar,NULL,value,u,0);
+            if (value < bestValue) {
+                bestValue = value;
+                bestLife = 1.0/std::tan(angle);
+                bestNorm = std::exp(logCharge);
+            }
+        }
+    }
+
+    fElectronLifeFunction->SetParameters(bestLife, bestNorm);
+    
+    ///TFitResultPtr result = graph->Fit(fElectronLifeFunction,"su","",
+    ///                                   xMin+(xMax-xMin)/20.0,
+    ///                                  xMax-(xMax-xMin)/20.0);
     TFitResultPtr result = graph->Fit(fElectronLifeFunction,"su","",
-                                      xMin+(xMax-xMin)/20.0,
-                                      xMax-(xMax-xMin)/20.0);
+                                      xMin,
+                                      xMax);
+
+    // Show the fit results in the legend
     if (!fGraphLegend || !fGraphLegend->GetListOfPrimitives()) {
         gPad->Update();
         return;
@@ -182,7 +218,8 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     std::ostringstream normLabel;
     normLabel << "Norm: "
               << unit::AsString(result->Parameter(1),
-                                result->Error(1), "charge");
+                                result->Error(1), "electrons")
+              << " @ " << unit::AsString(unit::microsecond*timeZero,"time");
     bool foundLifeLabel = false;
     TIter entries(fGraphLegend->GetListOfPrimitives());
     while (TObject *o = entries()) {
