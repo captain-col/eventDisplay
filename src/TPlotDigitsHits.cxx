@@ -11,6 +11,7 @@
 #include <TCalibPulseDigit.hxx>
 #include <TMCChannelId.hxx>
 #include <TRuntimeParameters.hxx>
+#include <TUnitsTable.hxx>
 
 #include <TChannelInfo.hxx>
 #include <TChannelCalib.hxx>
@@ -22,7 +23,9 @@
 #include <TColor.h>
 #include <TPolyLine.h>
 #include <TMarker.h>
+#include <TBox.h>
 #include <TROOT.h>
+#include <TLegend.h>
 
 #include <cmath>
 #include <algorithm>
@@ -109,8 +112,11 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
 
     // True if the sample values are times (not number of samples).
     bool samplesInTime = false;
+
+    // Get the default digits to be drawn.
     CP::THandle<CP::TDigitContainer> drift
         = event->Get<CP::TDigitContainer>("~/digits/drift");
+
     // Check if the user wanted to see deconvolved digits, or if normal digits
     // were not found.
     if (!CP::TEventDisplay::Get().GUI().GetShowRawDigitsButton()->IsOn()
@@ -124,19 +130,19 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
     
+    if (!drift) {
+        CaptLog("No drift signals for this event"); 
+        return;
+    }
+
     // True if the sample values should be filled into the histogram (slow)
     bool showDigitSamples = true;
     if (!CP::TEventDisplay::Get().GUI().GetShowDigitSamplesButton()->IsOn()) {
         showDigitSamples = false;
     }
 
-    if (!drift) {
-        CaptLog("No drift signals for this event"); 
-        return;
-    }
-
-    // Find the Z axis range for the histogram.  The median sample s the
-    // middle.  The max is the "biggest" distance from the medial.
+    // Find the Z axis range for the histogram.  The median samples the
+    // middle.  The max and min are the "biggest" distance from the median.
     std::vector<double> samples;
     for (CP::TDigitContainer::const_iterator d = drift->begin();
          d != drift->end(); ++d) {
@@ -156,11 +162,12 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
 
+    // Crash prevention.  It shouldn't be possible to have digits without any
+    // samples, but...
     if (samples.empty()) return;
     
     std::sort(samples.begin(),samples.end());
     double medianSample = samples[0.5*samples.size()];
-
     double maxSample = std::abs(samples[0.99*samples.size()]-medianSample);
     maxSample = std::max(maxSample,
                          std::abs(samples[0.01*samples.size()]-medianSample));
@@ -197,15 +204,19 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     double signalEnd = times[0.99*times.size()];
     int signalBins = (signalEnd-signalStart)/digitSampleTime;
 
-    // Connect to the histogram to show.
-    TH2F* digitPlot = NULL;
+    // Find the number of wires to be shown on the plot of digits and hits.
     int wireCount = CP::TGeometryInfo::Get().GetWireCount(plane);
     std::ostringstream histTitle;
     histTitle << "Event " << event->GetContext().GetRun()
               << "." << event->GetContext().GetEvent() << ":";
 
+    // Find the number of time bins to be shown on the plot of digits and
+    // hits.  The oversampling reduces the number of samples shown so that the
+    // display goes faster.
     int overSampling = 1.0;
     if (!CP::TEventDisplay::Get().GUI().GetShowDigitSamplesButton()->IsOn()) {
+        // In this case, the digits won't be shown, but we still need to have
+        // enough bins to allow zooming.
         overSampling = 50.0;
     }
     else if (!CP::TEventDisplay::Get().GUI().GetShowFullDigitsButton()->IsOn()){
@@ -213,6 +224,8 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     }
     signalBins /= overSampling;
     
+    // Connect to the histogram to show.
+    TH2F* digitPlot = NULL;
     switch (plane) {
     case 0:
         if (fXPlaneHist) delete fXPlaneHist;
@@ -311,6 +324,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     
     maxVal= std::min(maxVal,overSampling*10000.0);
 
+    // Get the right canvas to update.
     TCanvas* canvas = NULL;
     switch (plane) {
     case 0: canvas = (TCanvas*) gROOT->FindObject("canvasXDigits"); break;
@@ -319,6 +333,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     default: CaptError("Invalid canvas plane " << plane);
     }
 
+    // The canvas is missing, so create a new one.
     if (!canvas) {
         switch (plane) {
         case 0: canvas=new TCanvas("canvasXDigits","X Digits",500,300); break;
@@ -352,7 +367,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     gPad->Update();
 
     ////////////////////////////////////////////////////////////
-    // Now plot the PMT hits on the histogram.
+    // Now plot the PMT hit times on the histogram.
     ////////////////////////////////////////////////////////////
     
     CP::THandle<CP::THitSelection> pmts
@@ -386,8 +401,89 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
-
     if (hits) {
+        // Find the color ranges.
+        std::vector<double> charges;
+        for (CP::THitSelection::iterator h = hits->begin();
+             h != hits->end(); ++h) {
+            TGeometryId id = (*h)->GetGeomId();
+            TChannelId cid = (*h)->GetChannelId();
+            if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            charges.push_back((*h)->GetCharge());
+        }
+        std::sort(charges.begin(), charges.end());
+
+        TBox* box1 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box1->SetFillColor(kCyan-7);
+        graphicsDelete->push_back(box1);
+        TBox* box2 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box2->SetFillColor(kBlue-7);
+        graphicsDelete->push_back(box2);
+        TBox* box3 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box3->SetFillColor(kRed+1);
+        graphicsDelete->push_back(box3);
+        TBox* box4 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box4->SetFillColor(kRed);
+        graphicsDelete->push_back(box4);
+        TBox* box5 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box5->SetFillColor(kMagenta);
+        graphicsDelete->push_back(box5);
+        TBox* box6 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box6->SetFillColor(kYellow+1);
+        graphicsDelete->push_back(box6);
+        TBox* box7 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box7->SetFillColor(kGreen-3);
+        graphicsDelete->push_back(box7);
+
+        if (!showDigitSamples) {
+            TLegend* hitChargeLegend = new TLegend(0.8,0.8,1.0,1.0);
+            std::ostringstream label;
+            label << unit::AsString(charges[0],"charge")
+                  << " - "
+                  << unit::AsString(charges[0.01*charges.size()],"charge");
+            hitChargeLegend->AddEntry(box1,label.str().c_str(),"f");
+            label.str("");;
+
+            label << unit::AsString(charges[0.01*charges.size()],"charge")
+                  << " - "
+                  << unit::AsString(charges[0.2*charges.size()],"charge");
+            hitChargeLegend->AddEntry(box2,label.str().c_str(),"f");
+            label.str("");;
+
+            label << unit::AsString(charges[0.2*charges.size()],"charge")
+                  << " - "
+                  << unit::AsString(charges[0.4*charges.size()],"charge");
+            hitChargeLegend->AddEntry(box3,label.str().c_str(),"f");
+            label.str("");;
+
+            label << unit::AsString(charges[0.4*charges.size()],"charge")
+                  << " - "
+                  << unit::AsString(charges[0.6*charges.size()],"charge");
+            hitChargeLegend->AddEntry(box4,label.str().c_str(),"f");
+            label.str("");;
+
+            label << unit::AsString(charges[0.6*charges.size()],"charge")
+                  << " - "
+                  << unit::AsString(charges[0.8*charges.size()],"charge");
+            hitChargeLegend->AddEntry(box5,label.str().c_str(),"f");
+            label.str("");;
+
+            label << unit::AsString(charges[0.8*charges.size()],"charge")
+                  << " - "
+                  << unit::AsString(charges[0.99*charges.size()],"charge");
+            hitChargeLegend->AddEntry(box6,label.str().c_str(),"f");
+            label.str("");;
+
+            label << unit::AsString(charges[0.99*charges.size()],"charge")
+                  << " - "
+                  << unit::AsString(charges[charges.size()-1],"charge");
+            hitChargeLegend->AddEntry(box7,label.str().c_str(),"f");
+            label.str("");;
+
+            graphicsDelete->push_back(hitChargeLegend);
+            hitChargeLegend->Draw();
+        }
+
         for (CP::THitSelection::iterator h = hits->begin();
              h != hits->end(); ++h) {
             TGeometryId id = (*h)->GetGeomId();
@@ -416,6 +512,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             double dRMS = -1;
             
             int color = kRed;
+#ifndef OLD_COLOR
             if (charge < 4000.0) {
                 color = kGreen-7;
             }
@@ -446,7 +543,29 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             else {
                 color = kBlack+1;
             }
-            
+#else
+            if (charge > charges[0.99*charges.size()]) {
+                color = box7->GetFillColor();
+            }
+            else if (charge > charges[0.8*charges.size()]) {
+                color = box6->GetFillColor();
+            }
+            else if (charge > charges[0.6*charges.size()]) {
+                color = box5->GetFillColor();
+            }
+            else if (charge > charges[0.4*charges.size()]) {
+                color = box4->GetFillColor();
+            }
+            else if (charge > charges[0.2*charges.size()]) {
+                color = box3->GetFillColor();
+            }
+            else if (charge > charges[0.01*charges.size()]) {
+                color = box2->GetFillColor();
+            }
+            else {
+                color = box1->GetFillColor();
+            }
+#endif
             dRMS = rms/(wireTimeStep/digitSampleTime);
             
             {
