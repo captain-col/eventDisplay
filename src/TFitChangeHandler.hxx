@@ -77,5 +77,10 @@ private:
     /// be drawn.
     bool fShowFitsHits;
 
+    /// The new camera center.
+    TVector3 fCameraCenter;
+
+    /// A weight used to calculate the camera center.
+    double fCameraWeight;
 };
 #endif

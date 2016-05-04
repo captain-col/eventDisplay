@@ -30,6 +30,8 @@
 #include <TEveManager.h>
 #include <TEveGeoShape.h>
 #include <TEveLine.h>
+#include <TGLViewer.h>
+#include <TGLCamera.h>
 
 #include <sstream>
 
@@ -52,7 +54,8 @@ void CP::TFitChangeHandler::Apply() {
 
     fHitList->DestroyElements();
     fFitList->DestroyElements();
-
+    fCameraWeight = 0.0;
+    
     if (!CP::TEventDisplay::Get().GUI().GetShowFitsButton()->IsOn()) {
         CaptLog("Fits display disabled");
         return;
@@ -84,6 +87,23 @@ void CP::TFitChangeHandler::Apply() {
         CP::THandle<CP::TReconObjectContainer> objects 
             = event->Get<CP::TReconObjectContainer>(objName.c_str());
         index = ShowReconObjects(objects,index);
+    }
+
+    if (fCameraWeight > 1) {
+        TGLViewer* glViewer = gEve->GetDefaultGLViewer();
+        TGLCamera& camera = glViewer->CurrentCamera();
+        fCameraCenter *= 1.0/fCameraWeight;
+        std::cout << "Set Camera: "
+                  << " " << fCameraCenter.X()
+                  << " " << fCameraCenter.Y()
+                  << " " << fCameraCenter.Z()
+                  << " " << fCameraWeight
+                  << std::endl;
+    
+        camera.SetExternalCenter(kTRUE);
+        camera.SetCenterVecWarp(fCameraCenter.X(),
+                                fCameraCenter.Y(),
+                                fCameraCenter.Z());
     }
 
 }
@@ -240,6 +260,15 @@ int CP::TFitChangeHandler::ShowReconObject(CP::THandle<CP::TReconBase> obj,
                                            bool showHits,
                                            bool forceUncertainty) {
     if (!obj) return index;
+    // Add this object to the estimated center.
+    CP::THandle<CP::THitSelection> hits = obj->GetHits();
+    if (hits) {
+        for (CP::THitSelection::iterator h = hits->begin();
+             h != hits->end(); ++h) {
+            fCameraCenter += (*h)->GetCharge()*(*h)->GetPosition();
+            fCameraWeight += (*h)->GetCharge();
+        }
+    }
     CP::THandle<CP::TReconCluster> cluster = obj;
     if (cluster) {
         index = ShowReconCluster(cluster, index, showHits, forceUncertainty);

@@ -37,6 +37,7 @@ void CP::TEventDisplay::Init() {
     TGLViewer* glViewer = gEve->GetDefaultGLViewer();
     glViewer->SetCurrentCamera(TGLViewer::kCameraPerspXOY);
     glViewer->SetGuideState(TGLUtil::kAxesEdge,kTRUE,kFALSE,0);
+    glViewer->SetDrawCameraCenter(kTRUE);
 
     // This is accessed through the GUI() method.
     fGUIManager = new TGUIManager();
