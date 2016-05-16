@@ -89,21 +89,15 @@ void CP::TFitChangeHandler::Apply() {
         index = ShowReconObjects(objects,index);
     }
 
-    if (fCameraWeight > 1) {
+    if (fCameraWeight > 1 
+        && CP::TEventDisplay::Get().GUI().GetRecalculateViewButton()->IsOn()) {
         TGLViewer* glViewer = gEve->GetDefaultGLViewer();
-        TGLCamera& camera = glViewer->CurrentCamera();
         fCameraCenter *= 1.0/fCameraWeight;
-        std::cout << "Set Camera: "
-                  << " " << fCameraCenter.X()
-                  << " " << fCameraCenter.Y()
-                  << " " << fCameraCenter.Z()
-                  << " " << fCameraWeight
-                  << std::endl;
-    
-        camera.SetExternalCenter(kTRUE);
-        camera.SetCenterVecWarp(fCameraCenter.X(),
-                                fCameraCenter.Y(),
-                                fCameraCenter.Z());
+        glViewer->SetDrawCameraCenter(kTRUE);
+        glViewer->CurrentCamera().SetExternalCenter(kTRUE);
+        glViewer->CurrentCamera().SetCenterVecWarp(fCameraCenter.X(),
+                                                   fCameraCenter.Y(),
+                                                   fCameraCenter.Z());
     }
 
 }

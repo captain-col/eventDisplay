@@ -51,6 +51,9 @@ public:
     /// Get the check button selecting if G4 hits should be shown.
     TGButton* GetShowG4HitsButton() {return fShowG4HitsButton;}
 
+    /// Get the check button selecting if view point should be recalculated.
+    TGButton* GetRecalculateViewButton() {return fRecalculateViewButton;}
+
     /// Get the button to draw the U plane digits.
     TGButton* GetDrawTimeChargeButton() {return fDrawTimeChargeButton;}
 
@@ -120,6 +123,7 @@ private:
     TGButton* fShowFitsButton;
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
+    TGButton* fRecalculateViewButton;
     TGButton* fDrawTimeChargeButton;
     TGButton* fFitTimeChargeButton;
     TGButton* fShowXTimeChargeButton;

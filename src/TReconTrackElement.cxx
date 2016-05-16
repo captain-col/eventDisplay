@@ -102,7 +102,8 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
     int p=0;
 
     // Start at the front state of the track
-#ifdef LINE_TO_FRONT_STATE
+#define SHOW_FRONT_STATE
+#ifdef SHOW_FRONT_STATE
     if (frontState) {
         TLorentzVector frontPos = frontState->GetPosition();
         TLorentzVector frontVar = frontState->GetPositionVariance();
@@ -157,7 +158,8 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
         CP::TCaptLog::DecreaseIndentation();
     }
 
-#ifdef LINE_TO_BACK_STATE
+#define SHOW_BACK_STATE
+#ifdef SHOW_BACK_STATE
     // finish at the back state of the track
     if (backState) {
         TLorentzVector backPos = backState->GetPosition();
@@ -184,6 +186,25 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
 
     if (!showUncertainty) return;
     
+#ifdef SHOW_FRONT_STATE
+    if (frontState) {
+        TLorentzVector nodePos = frontState->GetPosition();
+        TMatrixD nodeVar(3,3);
+        for (int i=0; i<3; ++i) {
+            for (int j=0; j<3; ++j) {
+                nodeVar(i,j) = frontState->GetPositionCovariance(i,j);
+            }
+        }
+        CP::TMatrixElement* uncertainty
+            = new CP::TMatrixElement("Uncertainty",
+                                     nodePos.Vect(),
+                                     nodeVar,
+                                     false);
+        uncertainty->SetMainColor(kBlue-9);
+        AddElement(uncertainty);
+    }
+#endif
+
     // Add the uncertainty.
     for (CP::TReconNodeContainer::iterator n = nodes.begin();
          n != nodes.end(); ++n) {
@@ -208,5 +229,26 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
         uncertainty->SetMainColor(kBlue);
         AddElement(uncertainty);
     }
+
+#ifdef SHOW_BACK_STATE
+    if (backState) {
+        TLorentzVector nodePos = backState->GetPosition();
+        TMatrixD nodeVar(3,3);
+        for (int i=0; i<3; ++i) {
+            for (int j=0; j<3; ++j) {
+                nodeVar(i,j) = backState->GetPositionCovariance(i,j);
+            }
+        }
+        CP::TMatrixElement* uncertainty
+            = new CP::TMatrixElement("Uncertainty",
+                                     nodePos.Vect(),
+                                     nodeVar,
+                                     false);
+        uncertainty->SetMainColor(kCyan-9);
+        AddElement(uncertainty);
+    }
+#endif
+
+
 }
 

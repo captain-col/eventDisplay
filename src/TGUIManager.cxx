@@ -123,6 +123,16 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowG4HitsButton = checkButton;
 
+    checkButton = new TGCheckButton(hf,"Recalculate view");
+    checkButton->SetToolTipText(
+        "Recalculate center of rotation based.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    checkButton->SetOn();
+    hf->AddFrame(checkButton, layoutHints);
+    fRecalculateViewButton = checkButton;
+
     /////////////////////
     // Button to draw the hit times and charges.
     /////////////////////
