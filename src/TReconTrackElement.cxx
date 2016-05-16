@@ -200,7 +200,7 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                                      nodePos.Vect(),
                                      nodeVar,
                                      false);
-        uncertainty->SetMainColor(kBlue-9);
+        uncertainty->SetMainColor(kCyan-9);
         AddElement(uncertainty);
     }
 #endif
@@ -244,7 +244,7 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                                      nodePos.Vect(),
                                      nodeVar,
                                      false);
-        uncertainty->SetMainColor(kCyan-9);
+        uncertainty->SetMainColor(kGreen+2);
         AddElement(uncertainty);
     }
 #endif
