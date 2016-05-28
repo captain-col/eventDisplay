@@ -40,15 +40,16 @@ bool CP::TShowPMTHits::operator () (TEveElementList* elements,
         double charge = id->second;
         if (charge<1.0) charge = 1.0;
         pos = firstHits[geomId]->GetPosition();
-        double xyHalf = 10*unit::mm + 90.0*unit::mm*(std::sqrt(charge)/7.0);
-        xyHalf = std::min(100*unit::mm, xyHalf);
+        double xyHalf = 10*unit::mm;
+        double zHalf = 5*(1.0+9.0*std::log(1.0+charge)/std::log(10.0))*unit::mm;
+        double top = 0.0;
+        if (pos.Z() < -10*unit::cm) top = -1;
         boxes->AddBox(pos.X()-xyHalf, 
                       pos.Y()-xyHalf, 
-                      pos.Z()-10*unit::mm,
+                      pos.Z()+2*top*zHalf,
                       2*xyHalf, 
                       2*xyHalf,
-                      20*unit::mm);
-        charge = 120*std::log(1.0+charge/maxCharge)/std::log(2.0);
+                      2*zHalf);
         boxes->DigitValue(charge);
     }
     boxes->RefitPlex();

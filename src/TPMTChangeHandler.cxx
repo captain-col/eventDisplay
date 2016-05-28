@@ -38,7 +38,7 @@ CP::TPMTChangeHandler::TPMTChangeHandler() {
     fPMTList->SetMainAlpha(0.5);
     gEve->AddElement(fPMTList);
 
-    fPalette = new TEveRGBAPalette(0,15,false,false,true);
+    fPalette = new TEveRGBAPalette(0,15,true,true,false);
 
 }
 
