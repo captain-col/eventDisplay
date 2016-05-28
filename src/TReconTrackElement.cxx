@@ -1,5 +1,6 @@
 #include "TReconTrackElement.hxx"
 #include "TMatrixElement.hxx"
+#include "TEventDisplay.hxx"
 
 #include <TCaptLog.hxx>
 #include <HEPUnits.hxx>
@@ -226,7 +227,37 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                                      nodePos.Vect(),
                                      nodeVar,
                                      false);
-        uncertainty->SetMainColor(kBlue);
+        int color = kBlue;
+        double length = 0;
+        if (n == nodes.begin()) {
+            CP::THandle<CP::TTrackState> b = (*(n+1))->GetState();
+            length = 0.75*(frontState->GetPosition().Vect()
+                          - b->GetPosition().Vect()).Mag();
+        }
+        else if ((n+1) == nodes.end()) {
+            CP::THandle<CP::TTrackState> b = (*(n-1))->GetState();
+            length = 0.75*(backState->GetPosition().Vect()
+                          - b->GetPosition().Vect()).Mag();
+        }
+        else {
+            CP::THandle<CP::TTrackState> a = (*(n-1))->GetState();
+            CP::THandle<CP::TTrackState> b = (*(n+1))->GetState();
+            length = 0.5*(a->GetPosition().Vect()
+                          - b->GetPosition().Vect()).Mag();
+        }
+        // EDeposit is in measured charge.
+        CP::THandle<CP::TReconCluster> cluster = nodeObject;
+        double energy
+            = CP::TEventDisplay::Get().CrudeEnergy(cluster->GetEDeposit());
+        double dEdX = energy;
+        if (length > 1*unit::mm) {
+            dEdX /= length;              // Get charge per length;
+            double minEnergy = 0.18*unit::MeV/unit::mm;
+            double maxEnergy = 3.0*unit::MeV/unit::mm;
+            color = TEventDisplay::Get().LogColor(dEdX,
+                                                  minEnergy,maxEnergy,2.0);
+        }
+        uncertainty->SetMainColor(color);
         AddElement(uncertainty);
     }
 
