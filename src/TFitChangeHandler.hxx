@@ -32,39 +32,46 @@ public:
 private:
 
     /// A method to draw a TReconCluster.
-    int ShowReconCluster(const CP::THandle<CP::TReconCluster> obj,
+    int ShowReconCluster(TEveElementList* list,
+                         const CP::THandle<CP::TReconCluster> obj,
                          int index,
                          bool showHits,
                          bool forceUncertainty);
     
     /// A method to draw a TReconShower.
-    int ShowReconShower(const CP::THandle<CP::TReconShower> obj,
+    int ShowReconShower(TEveElementList* list,
+                        const CP::THandle<CP::TReconShower> obj,
                         int index,
                         bool showHits);
 
     /// A method to draw a TReconTrack.
-    int ShowReconTrack(const CP::THandle<CP::TReconTrack> obj,
+    int ShowReconTrack(TEveElementList* list,
+                       const CP::THandle<CP::TReconTrack> obj,
                        int index,
                        bool showHits);
 
     /// A method to draw a TReconPID
-    int ShowReconPID(const CP::THandle<CP::TReconPID> obj,
+    int ShowReconPID(TEveElementList* list,
+                     const CP::THandle<CP::TReconPID> obj,
                      int index,
                      bool showHits);
 
     /// A method to draw a TReconVertex
-    int ShowReconVertex(const CP::THandle<CP::TReconVertex> obj,
+    int ShowReconVertex(TEveElementList* list,
+                        const CP::THandle<CP::TReconVertex> obj,
                         int index,
                         bool showHits);
 
     /// A method to draw a generic TReconBase
-    int ShowReconObject(const CP::THandle<CP::TReconBase> obj,
+    int ShowReconObject(TEveElementList* list,
+                        const CP::THandle<CP::TReconBase> obj,
                         int index,
                         bool showHits,
                         bool forceUncertainty);
 
     /// A method to draw a TReconObjectContainer
-    int ShowReconObjects(const CP::THandle<CP::TReconObjectContainer> obj,
+    int ShowReconObjects(TEveElementList* list,
+                         const CP::THandle<CP::TReconObjectContainer> obj,
                          int index = 0);
 
     /// The reconstruction objects to draw in the event.

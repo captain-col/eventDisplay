@@ -92,10 +92,11 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
     SetTitle(title.str().c_str());
 
     TEveLine* trackLine = new TEveLine(nodes.size());
-
+    
     trackLine->SetName(objName.str().c_str()); 
 
     trackLine->SetTitle(title.str().c_str());
+    trackLine->SetSourceObject(&track);
     trackLine->SetLineColor(kBlue);
     trackLine->SetLineStyle(1);
     trackLine->SetLineWidth(2);
@@ -103,8 +104,6 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
     int p=0;
 
     // Start at the front state of the track
-#define SHOW_FRONT_STATE
-#ifdef SHOW_FRONT_STATE
     if (frontState) {
         TLorentzVector frontPos = frontState->GetPosition();
         TLorentzVector frontVar = frontState->GetPositionVariance();
@@ -122,7 +121,6 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                       << unit::AsString(frontState->GetDirection()));
         CP::TCaptLog::DecreaseIndentation();
     }
-#endif
     
     for (CP::TReconNodeContainer::iterator n = nodes.begin();
          n != nodes.end(); ++n) {
@@ -159,8 +157,6 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
         CP::TCaptLog::DecreaseIndentation();
     }
 
-#define SHOW_BACK_STATE
-#ifdef SHOW_BACK_STATE
     // finish at the back state of the track
     if (backState) {
         TLorentzVector backPos = backState->GetPosition();
@@ -179,7 +175,6 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                       << unit::AsString(backState->GetDirection()));
         CP::TCaptLog::DecreaseIndentation();
     }
-#endif
     
     AddElement(trackLine);
 
@@ -187,7 +182,6 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
 
     if (!showUncertainty) return;
     
-#ifdef SHOW_FRONT_STATE
     if (frontState) {
         TLorentzVector nodePos = frontState->GetPosition();
         TMatrixD nodeVar(3,3);
@@ -202,9 +196,9 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                                      nodeVar,
                                      false);
         uncertainty->SetMainColor(kCyan-9);
+        uncertainty->SetSourceObject(&(*frontState));
         AddElement(uncertainty);
     }
-#endif
 
     // Add the uncertainty.
     for (CP::TReconNodeContainer::iterator n = nodes.begin();
@@ -258,10 +252,10 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                                                   minEnergy,maxEnergy,2.0);
         }
         uncertainty->SetMainColor(color);
+        uncertainty->SetSourceObject(&(*nodeState));
         AddElement(uncertainty);
     }
 
-#ifdef SHOW_BACK_STATE
     if (backState) {
         TLorentzVector nodePos = backState->GetPosition();
         TMatrixD nodeVar(3,3);
@@ -276,9 +270,9 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
                                      nodeVar,
                                      false);
         uncertainty->SetMainColor(kGreen+2);
+        uncertainty->SetSourceObject(&(*backState));
         AddElement(uncertainty);
     }
-#endif
 
 
 }

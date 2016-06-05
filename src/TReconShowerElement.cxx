@@ -70,6 +70,7 @@ CP::TReconShowerElement::TReconShowerElement(CP::TReconShower& shower,
     TEveLine* showerLine = new TEveLine(nodes.size());
     showerLine->SetName(objName.str().c_str()); 
     showerLine->SetTitle(title.str().c_str());
+    showerLine->SetSourceObject(&shower);
     showerLine->SetLineColor(kRed);
     showerLine->SetLineStyle(1);
     showerLine->SetLineWidth(2);

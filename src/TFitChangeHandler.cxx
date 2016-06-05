@@ -86,7 +86,7 @@ void CP::TFitChangeHandler::Apply() {
         std::string objName(lbEntry->GetTitle());
         CP::THandle<CP::TReconObjectContainer> objects 
             = event->Get<CP::TReconObjectContainer>(objName.c_str());
-        index = ShowReconObjects(objects,index);
+        index = ShowReconObjects(fFitList,objects,index);
     }
 
     if (fCameraWeight > 1 
@@ -103,6 +103,7 @@ void CP::TFitChangeHandler::Apply() {
 }
 
 int CP::TFitChangeHandler::ShowReconCluster(
+    TEveElementList* list,
     CP::THandle<CP::TReconCluster> obj,
     int index,
     bool showHits,
@@ -126,7 +127,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
     CP::TReconClusterElement *eveCluster
         = new CP::TReconClusterElement(*obj,forceUncertainty);
 
-    fFitList->AddElement(eveCluster);
+    list->AddElement(eveCluster);
     
     if (fShowFitsHits && showHits) {
         // Draw the hits.
@@ -138,6 +139,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
 }
 
 int CP::TFitChangeHandler::ShowReconShower(
+    TEveElementList* list,
     CP::THandle<CP::TReconShower> obj,
     int index,
     bool showHits) {
@@ -154,14 +156,14 @@ int CP::TFitChangeHandler::ShowReconShower(
 
     CP::TReconShowerElement *eveShower = new CP::TReconShowerElement(*obj,true);
 
-    fFitList->AddElement(eveShower);
+    list->AddElement(eveShower);
 
     // Draw the clusters.
     if (CP::TEventDisplay::Get().GUI()
         .GetShowConstituentClustersButton()->IsOn()) {
         for (CP::TReconNodeContainer::iterator n = obj->GetNodes().begin();
              n != obj->GetNodes().end(); ++n) {
-            index = ShowReconObject((*n)->GetObject(),index, false, false);
+            index = ShowReconObject(eveShower,(*n)->GetObject(),index, false, false);
         }
     }
 
@@ -171,6 +173,7 @@ int CP::TFitChangeHandler::ShowReconShower(
 }
 
 int CP::TFitChangeHandler::ShowReconTrack(
+    TEveElementList* list,
     CP::THandle<CP::TReconTrack> obj,
     int index,
     bool showHits) {
@@ -185,7 +188,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
     ++index;
 
     TReconTrackElement *eveTrack = new TReconTrackElement(*obj,true);
-    fFitList->AddElement(eveTrack);
+    list->AddElement(eveTrack);
 
     if (fShowFitsHits && showHits) {
         // Draw the hits.
@@ -198,7 +201,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
         .GetShowConstituentClustersButton()->IsOn()) {
         for (CP::TReconNodeContainer::iterator n = obj->GetNodes().begin();
              n != obj->GetNodes().end(); ++n) {
-            index = ShowReconObject((*n)->GetObject(),index, false, true);
+            index = ShowReconObject(eveTrack,(*n)->GetObject(),index, false, true);
         }
     }
 
@@ -206,6 +209,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
 }
 
 int CP::TFitChangeHandler::ShowReconPID(
+    TEveElementList* list,
     CP::THandle<CP::TReconPID> obj, 
     int index,
     bool showHits) {
@@ -215,6 +219,7 @@ int CP::TFitChangeHandler::ShowReconPID(
 }
 
 int CP::TFitChangeHandler::ShowReconVertex(
+    TEveElementList* list,
     CP::THandle<CP::TReconVertex> obj,
     int index,
     bool showHits) {
@@ -241,7 +246,7 @@ int CP::TFitChangeHandler::ShowReconVertex(
         CP::TCaptLog::IncreaseIndentation();
         CaptLog("Constituent objects: " << constituents->size());
         CP::TCaptLog::IncreaseIndentation();
-        index = ShowReconObjects(constituents,index);
+        index = ShowReconObjects(list,constituents,index);
         CP::TCaptLog::DecreaseIndentation();
         CP::TCaptLog::DecreaseIndentation();
     }
@@ -249,7 +254,8 @@ int CP::TFitChangeHandler::ShowReconVertex(
     return index;
 }
 
-int CP::TFitChangeHandler::ShowReconObject(CP::THandle<CP::TReconBase> obj,
+int CP::TFitChangeHandler::ShowReconObject(TEveElementList* list,
+                                           CP::THandle<CP::TReconBase> obj,
                                            int index,
                                            bool showHits,
                                            bool forceUncertainty) {
@@ -265,33 +271,35 @@ int CP::TFitChangeHandler::ShowReconObject(CP::THandle<CP::TReconBase> obj,
     }
     CP::THandle<CP::TReconCluster> cluster = obj;
     if (cluster) {
-        index = ShowReconCluster(cluster, index, showHits, forceUncertainty);
+        index = ShowReconCluster(
+            list, cluster, index, showHits, forceUncertainty);
         return index;
     }
     CP::THandle<CP::TReconShower> shower = obj;
     if (shower) {
-        index = ShowReconShower(shower, index, showHits);
+        index = ShowReconShower(list, shower, index, showHits);
         return index;
     }
     CP::THandle<CP::TReconTrack> track = obj;
     if (track) {
-        index = ShowReconTrack(track, index, showHits);
+        index = ShowReconTrack(list, track, index, showHits);
         return index;
     }
     CP::THandle<CP::TReconPID> pid = obj;
     if (pid) {
-        index = ShowReconPID(pid, index, showHits);
+        index = ShowReconPID(list, pid, index, showHits);
         return index;
     }
     CP::THandle<CP::TReconVertex> vertex = obj;
     if (vertex) {
-        index = ShowReconVertex(vertex, index, showHits);
+        index = ShowReconVertex(list, vertex, index, showHits);
         return index;
     }
     return index;
 }
 
 int CP::TFitChangeHandler::ShowReconObjects(
+    TEveElementList* list,
     CP::THandle<CP::TReconObjectContainer> objects,
     int index) {
     if (!objects) return index;
@@ -299,7 +307,7 @@ int CP::TFitChangeHandler::ShowReconObjects(
     CP::TCaptLog::IncreaseIndentation();
     for (CP::TReconObjectContainer::iterator obj = objects->begin();
          obj != objects->end(); ++obj) {
-        index = ShowReconObject(*obj, index, true, false);
+        index = ShowReconObject(list,*obj, index, true, false);
     }
     CP::TCaptLog::DecreaseIndentation();
     return index;

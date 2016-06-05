@@ -1,6 +1,7 @@
 #include "TReconClusterElement.hxx"
 #include "TMatrixElement.hxx"
 #include "TEventDisplay.hxx"
+#include "TGUIManager.hxx"
 
 #include <TCaptLog.hxx>
 #include <HEPUnits.hxx>
@@ -142,8 +143,12 @@ CP::TReconClusterElement::TReconClusterElement(CP::TReconCluster& cluster,
     title << std::endl
           << "  Energy Deposit: " << unit::AsString(energy,-1,"energy")
           << "  dEdX (per cm) " << unit::AsString(dEdX*unit::cm,-1,"energy");
+
+    SetName(name.str().c_str());
+    SetTitle(title.str().c_str());
+
     eveCluster->SetTitle(title.str().c_str());
-    
+    eveCluster->SetSourceObject(&cluster);
     AddElement(eveCluster);
     
 }
