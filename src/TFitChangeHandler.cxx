@@ -45,6 +45,8 @@ CP::TFitChangeHandler::TFitChangeHandler() {
     fFitList->SetMainColor(kGreen);
     fFitList->SetMainAlpha(0.5);
     gEve->AddElement(fFitList);
+    fShowFitsHits = true;
+    fShowFitsObjects = true;
 }
 
 CP::TFitChangeHandler::~TFitChangeHandler() {
@@ -56,7 +58,8 @@ void CP::TFitChangeHandler::Apply() {
     fFitList->DestroyElements();
     fCameraWeight = 0.0;
     
-    if (!CP::TEventDisplay::Get().GUI().GetShowFitsButton()->IsOn()) {
+    if (!CP::TEventDisplay::Get().GUI().GetShowFitsButton()->IsOn()
+        && !CP::TEventDisplay::Get().GUI().GetShowFitsHitsButton()->IsOn()) {
         CaptLog("Fits display disabled");
         return;
     }
@@ -67,6 +70,14 @@ void CP::TFitChangeHandler::Apply() {
     }
     else {
         fShowFitsHits = false;
+    }
+
+    if (CP::TEventDisplay::Get().GUI().GetShowFitsButton()->IsOn()) {
+        CaptLog("Showing Fit Objecs");
+        fShowFitsObjects = true;
+    }
+    else {
+        fShowFitsObjects = false;
     }
 
     CaptLog("Handle the fit information");
@@ -106,7 +117,6 @@ int CP::TFitChangeHandler::ShowReconCluster(
     TEveElementList* list,
     CP::THandle<CP::TReconCluster> obj,
     int index,
-    bool showHits,
     bool forceUncertainty) {
     if (!obj) return index;
 
@@ -129,10 +139,11 @@ int CP::TFitChangeHandler::ShowReconCluster(
 
     list->AddElement(eveCluster);
     
-    if (fShowFitsHits && showHits) {
+    if (CP::TEventDisplay::Get().GUI()
+        .GetShowClusterHitsButton()->IsOn()) {
         // Draw the hits.
         CP::TShowDriftHits showDrift;
-        showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
+        showDrift(eveCluster, *(obj->GetHits()), obj->GetPosition().T());
     }
 
     return index;
@@ -141,8 +152,7 @@ int CP::TFitChangeHandler::ShowReconCluster(
 int CP::TFitChangeHandler::ShowReconShower(
     TEveElementList* list,
     CP::THandle<CP::TReconShower> obj,
-    int index,
-    bool showHits) {
+    int index) {
     if (!obj) return index;
 
     CP::THandle<CP::TShowerState> state = obj->GetState();
@@ -163,7 +173,7 @@ int CP::TFitChangeHandler::ShowReconShower(
         .GetShowConstituentClustersButton()->IsOn()) {
         for (CP::TReconNodeContainer::iterator n = obj->GetNodes().begin();
              n != obj->GetNodes().end(); ++n) {
-            index = ShowReconObject(eveShower,(*n)->GetObject(),index, false, false);
+            index = ShowReconObject(eveShower,(*n)->GetObject(),index, false);
         }
     }
 
@@ -175,8 +185,7 @@ int CP::TFitChangeHandler::ShowReconShower(
 int CP::TFitChangeHandler::ShowReconTrack(
     TEveElementList* list,
     CP::THandle<CP::TReconTrack> obj,
-    int index,
-    bool showHits) {
+    int index) {
     if (!obj) return index;
     CP::THandle<CP::TTrackState> frontState = obj->GetState();
     if (!frontState) {
@@ -190,18 +199,12 @@ int CP::TFitChangeHandler::ShowReconTrack(
     TReconTrackElement *eveTrack = new TReconTrackElement(*obj,true);
     list->AddElement(eveTrack);
 
-    if (fShowFitsHits && showHits) {
-        // Draw the hits.
-        CP::TShowDriftHits showDrift;
-        showDrift(fHitList, *(obj->GetHits()), obj->GetPosition().T());
-    }
-
     // Draw the clusters.
     if (CP::TEventDisplay::Get().GUI()
         .GetShowConstituentClustersButton()->IsOn()) {
         for (CP::TReconNodeContainer::iterator n = obj->GetNodes().begin();
              n != obj->GetNodes().end(); ++n) {
-            index = ShowReconObject(eveTrack,(*n)->GetObject(),index, false, true);
+            index = ShowReconObject(eveTrack,(*n)->GetObject(),index, true);
         }
     }
 
@@ -211,8 +214,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
 int CP::TFitChangeHandler::ShowReconPID(
     TEveElementList* list,
     CP::THandle<CP::TReconPID> obj, 
-    int index,
-    bool showHits) {
+    int index) {
     if (!obj) return index;
     CaptError("ShowReconPID not Implemented");
     return index;
@@ -221,8 +223,7 @@ int CP::TFitChangeHandler::ShowReconPID(
 int CP::TFitChangeHandler::ShowReconVertex(
     TEveElementList* list,
     CP::THandle<CP::TReconVertex> obj,
-    int index,
-    bool showHits) {
+    int index) {
     if (!obj) return index;
 
     CP::THandle<CP::TVertexState> state = obj->GetState();
@@ -257,7 +258,6 @@ int CP::TFitChangeHandler::ShowReconVertex(
 int CP::TFitChangeHandler::ShowReconObject(TEveElementList* list,
                                            CP::THandle<CP::TReconBase> obj,
                                            int index,
-                                           bool showHits,
                                            bool forceUncertainty) {
     if (!obj) return index;
     // Add this object to the estimated center.
@@ -269,30 +269,31 @@ int CP::TFitChangeHandler::ShowReconObject(TEveElementList* list,
             fCameraWeight += (*h)->GetCharge();
         }
     }
+    CP::THandle<CP::TReconVertex> vertex = obj;
+    if (vertex) {
+        index = ShowReconVertex(list, vertex, index);
+        return index;
+    }
+    if (!fShowFitsObjects) return index;
     CP::THandle<CP::TReconCluster> cluster = obj;
     if (cluster) {
         index = ShowReconCluster(
-            list, cluster, index, showHits, forceUncertainty);
+            list, cluster, index, forceUncertainty);
         return index;
     }
     CP::THandle<CP::TReconShower> shower = obj;
     if (shower) {
-        index = ShowReconShower(list, shower, index, showHits);
+        index = ShowReconShower(list, shower, index);
         return index;
     }
     CP::THandle<CP::TReconTrack> track = obj;
     if (track) {
-        index = ShowReconTrack(list, track, index, showHits);
+        index = ShowReconTrack(list, track, index);
         return index;
     }
     CP::THandle<CP::TReconPID> pid = obj;
     if (pid) {
-        index = ShowReconPID(list, pid, index, showHits);
-        return index;
-    }
-    CP::THandle<CP::TReconVertex> vertex = obj;
-    if (vertex) {
-        index = ShowReconVertex(list, vertex, index, showHits);
+        index = ShowReconPID(list, pid, index);
         return index;
     }
     return index;
@@ -307,7 +308,12 @@ int CP::TFitChangeHandler::ShowReconObjects(
     CP::TCaptLog::IncreaseIndentation();
     for (CP::TReconObjectContainer::iterator obj = objects->begin();
          obj != objects->end(); ++obj) {
-        index = ShowReconObject(list,*obj, index, true, false);
+        index = ShowReconObject(list,*obj, index, false);
+        if (fShowFitsHits) {
+            // Draw the hits.
+            CP::TShowDriftHits showDrift;
+            showDrift(fHitList, *((*obj)->GetHits()),0.0);
+        }
     }
     CP::TCaptLog::DecreaseIndentation();
     return index;

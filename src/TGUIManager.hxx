@@ -95,6 +95,10 @@ public:
     TGButton* GetShowConstituentClustersButton() 
         {return fShowConstituentClustersButton;}
 
+    /// Get the button to select if hits are drawn for the cluster.
+    TGButton* GetShowClusterHitsButton() 
+        {return fShowClusterHitsButton;}
+
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowClusterUncertaintyButton() 
         {return fShowClusterUncertaintyButton;}
@@ -137,6 +141,7 @@ private:
     TGButton* fShowDigitSamplesButton;
     TGButton* fShowFitsHitsButton;
     TGButton* fShowConstituentClustersButton;
+    TGButton* fShowClusterHitsButton;
     TGButton* fShowClusterUncertaintyButton;
 
     /// Make a tab in the browser to select algorithms shown.

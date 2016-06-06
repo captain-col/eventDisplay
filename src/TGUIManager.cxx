@@ -73,18 +73,18 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowFitsButton = checkButton;
 
-    /////////////////////
-    // Buttons to control how reconstruction objects are drawn.
-    /////////////////////
-
-    checkButton = new TGCheckButton(hf,"Show Recon Object Hits");
+    checkButton = new TGCheckButton(hf,"Show Recon 3D Hits");
     checkButton->SetToolTipText(
-        "Show the hits associated with the draw reconstructed objects.");
+        "Show all the reconstructed 3D hits.");
     checkButton->SetTextJustify(36);
     checkButton->SetMargins(0,0,0,0);
     checkButton->SetWrapLength(-1);
     hf->AddFrame(checkButton, layoutHints);
     fShowFitsHitsButton = checkButton;
+
+    /////////////////////
+    // Buttons to control how reconstruction objects are drawn.
+    /////////////////////
 
     checkButton = new TGCheckButton(hf,"Show Recon Object Clusters");
     checkButton->SetToolTipText(
@@ -94,6 +94,15 @@ void CP::TGUIManager::MakeControlTab() {
     checkButton->SetWrapLength(-1);
     hf->AddFrame(checkButton, layoutHints);
     fShowConstituentClustersButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show Cluster Hits");
+    checkButton->SetToolTipText(
+        "Show the hits associated a cluster.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowClusterHitsButton = checkButton;
 
     checkButton = new TGCheckButton(hf,"Show cluster uncertainty, not moments");
     checkButton->SetToolTipText(
