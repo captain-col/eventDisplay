@@ -248,8 +248,7 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
             dEdX /= length;              // Get charge per length;
             double minEnergy = 0.18*unit::MeV/unit::mm;
             double maxEnergy = 3.0*unit::MeV/unit::mm;
-            color = TEventDisplay::Get().LogColor(dEdX,
-                                                  minEnergy,maxEnergy,2.0);
+            color = TEventDisplay::Get().LogColor(dEdX,minEnergy,maxEnergy,2.0);
         }
         uncertainty->SetMainColor(color);
         uncertainty->SetSourceObject(&(*nodeState));
