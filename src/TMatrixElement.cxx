@@ -89,9 +89,9 @@ void CP::TMatrixElement::Initialize(const TVector3& position,
     SetTransMatrix(rotTrans);
 
     // Make sure the tube size doesn't get too small.
-    tubeAxis = std::max(0.5*unit::mm, tubeAxis);
-    tubeMajor = std::max(0.5*unit::mm, tubeMajor);
-    tubeMinor = std::max(0.5*unit::mm, tubeMinor);
+    tubeAxis = std::max(1.5*unit::mm, tubeAxis);
+    tubeMajor = std::max(1.5*unit::mm, tubeMajor);
+    tubeMinor = std::max(1.5*unit::mm, tubeMinor);
 
     // Create the shape to display.  This has to play some fancy footsie to
     // get the gGeoManager memory management right.  It first saves the
