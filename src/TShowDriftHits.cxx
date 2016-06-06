@@ -30,6 +30,7 @@ bool CP::TShowDriftHits::operator () (TEveElementList* elements,
                       2*half.Y(),
                       2*half.Z());
         boxes->DigitValue((*h)->GetCharge());
+        boxes->DigitId(&(*(*h)));
     }
     boxes->RefitPlex();
     
