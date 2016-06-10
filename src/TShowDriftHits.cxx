@@ -22,7 +22,7 @@ bool CP::TShowDriftHits::operator () (TEveElementList* elements,
         // The value is the charge.
         double deltaT = (*h)->GetTime() - t0;
         pos = (*h)->GetPosition() - deltaT*drift;
-        const TVector3& half = (*h)->GetUncertainty();
+        const TVector3& half = (*h)->GetRMS();
         boxes->AddBox(pos.X()-half.X(), 
                       pos.Y()-half.Y(), 
                       pos.Z()-half.Z(),
