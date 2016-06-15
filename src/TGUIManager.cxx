@@ -63,6 +63,15 @@ void CP::TGUIManager::MakeControlTab() {
     // Create the buttons to select which types of objects are showed.
     TGCheckButton *checkButton;
 
+    checkButton = new TGCheckButton(hf,"Show Recon 3D Hits");
+    checkButton->SetToolTipText(
+        "Show all the reconstructed 3D hits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowFitsHitsButton = checkButton;
+
     checkButton = new TGCheckButton(hf,"Show Recon Objects");
     checkButton->SetToolTipText(
         "Show the reconstructed objects.");
@@ -73,18 +82,18 @@ void CP::TGUIManager::MakeControlTab() {
     hf->AddFrame(checkButton, layoutHints);
     fShowFitsButton = checkButton;
 
-    checkButton = new TGCheckButton(hf,"Show Recon 3D Hits");
+    /////////////////////
+    // Buttons to control how reconstruction objects are drawn.
+    /////////////////////
+
+    checkButton = new TGCheckButton(hf,"Show Recon Object Directions");
     checkButton->SetToolTipText(
-        "Show all the reconstructed 3D hits.");
+        "Show the fitted directions (when available).");
     checkButton->SetTextJustify(36);
     checkButton->SetMargins(0,0,0,0);
     checkButton->SetWrapLength(-1);
     hf->AddFrame(checkButton, layoutHints);
-    fShowFitsHitsButton = checkButton;
-
-    /////////////////////
-    // Buttons to control how reconstruction objects are drawn.
-    /////////////////////
+    fShowFitsDirectionButton = checkButton;
 
     checkButton = new TGCheckButton(hf,"Show Recon Object Clusters");
     checkButton->SetToolTipText(

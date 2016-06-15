@@ -1,6 +1,7 @@
 #include "TReconTrackElement.hxx"
 #include "TMatrixElement.hxx"
 #include "TEventDisplay.hxx"
+#include "TGUIManager.hxx"
 
 #include <TCaptLog.hxx>
 #include <HEPUnits.hxx>
@@ -18,7 +19,8 @@
 CP::TReconTrackElement::~TReconTrackElement() {}
 
 CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
-                                           bool showUncertainty)
+                                           bool showUncertainty,
+                                           bool showDirection)
     : TEveElementList() {
     
     CP::THandle<CP::TTrackState> frontState = track.GetState();
@@ -180,9 +182,8 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
 
     CP::TCaptLog::DecreaseIndentation();
 
-    if (!showUncertainty) return;
-    
-    if (frontState) {
+    // Add the front state position and position uncertainty.
+    if (showUncertainty && frontState) {
         TLorentzVector nodePos = frontState->GetPosition();
         TMatrixD nodeVar(3,3);
         for (int i=0; i<3; ++i) {
@@ -200,62 +201,67 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
         AddElement(uncertainty);
     }
 
-    // Add the uncertainty.
-    for (CP::TReconNodeContainer::iterator n = nodes.begin();
-         n != nodes.end(); ++n) {
-        CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
-        CP::THandle<CP::TReconBase> nodeObject = (*n)->GetObject();
-        if (!nodeState) {
-            CaptError("Node is missing");
-            continue;
-        }
-        TLorentzVector nodePos = nodeState->GetPosition();
-        TMatrixD nodeVar(3,3);
-        for (int i=0; i<3; ++i) {
-            for (int j=0; j<3; ++j) {
-                nodeVar(i,j) = nodeState->GetPositionCovariance(i,j);
+    // Add the node position and position uncertainty.
+    if (showUncertainty) {
+        for (CP::TReconNodeContainer::iterator n = nodes.begin();
+             n != nodes.end(); ++n) {
+            CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
+            CP::THandle<CP::TReconBase> nodeObject = (*n)->GetObject();
+            if (!nodeState) {
+                CaptError("Node is missing");
+                continue;
             }
+            TLorentzVector nodePos = nodeState->GetPosition();
+            TMatrixD nodeVar(3,3);
+            for (int i=0; i<3; ++i) {
+                for (int j=0; j<3; ++j) {
+                    nodeVar(i,j) = nodeState->GetPositionCovariance(i,j);
+                }
+            }
+            CP::TMatrixElement* uncertainty
+                = new CP::TMatrixElement("Uncertainty",
+                                         nodePos.Vect(),
+                                         nodeVar,
+                                         false);
+            int color = kBlue;
+            double length = 0;
+            if (n == nodes.begin()) {
+                CP::THandle<CP::TTrackState> b = (*(n+1))->GetState();
+                length = 0.75*(frontState->GetPosition().Vect()
+                               - b->GetPosition().Vect()).Mag();
+            }
+            else if ((n+1) == nodes.end()) {
+                CP::THandle<CP::TTrackState> b = (*(n-1))->GetState();
+                length = 0.75*(backState->GetPosition().Vect()
+                               - b->GetPosition().Vect()).Mag();
+            }
+            else {
+                CP::THandle<CP::TTrackState> a = (*(n-1))->GetState();
+                CP::THandle<CP::TTrackState> b = (*(n+1))->GetState();
+                length = 0.5*(a->GetPosition().Vect()
+                              - b->GetPosition().Vect()).Mag();
+            }
+            // EDeposit is in measured charge.
+            CP::THandle<CP::TReconCluster> cluster = nodeObject;
+            double energy
+                = CP::TEventDisplay::Get().CrudeEnergy(cluster->GetEDeposit());
+            double dEdX = energy;
+            if (length > 1*unit::mm) {
+                dEdX /= length;              // Get charge per length;
+                double minEnergy = 0.18*unit::MeV/unit::mm;
+                double maxEnergy = 3.0*unit::MeV/unit::mm;
+                color = TEventDisplay::Get().LogColor(dEdX,
+                                                      minEnergy,
+                                                      maxEnergy,2.0);
+            }
+            uncertainty->SetMainColor(color);
+            uncertainty->SetSourceObject(&(*nodeState));
+            AddElement(uncertainty);
         }
-        CP::TMatrixElement* uncertainty
-            = new CP::TMatrixElement("Uncertainty",
-                                     nodePos.Vect(),
-                                     nodeVar,
-                                     false);
-        int color = kBlue;
-        double length = 0;
-        if (n == nodes.begin()) {
-            CP::THandle<CP::TTrackState> b = (*(n+1))->GetState();
-            length = 0.75*(frontState->GetPosition().Vect()
-                          - b->GetPosition().Vect()).Mag();
-        }
-        else if ((n+1) == nodes.end()) {
-            CP::THandle<CP::TTrackState> b = (*(n-1))->GetState();
-            length = 0.75*(backState->GetPosition().Vect()
-                          - b->GetPosition().Vect()).Mag();
-        }
-        else {
-            CP::THandle<CP::TTrackState> a = (*(n-1))->GetState();
-            CP::THandle<CP::TTrackState> b = (*(n+1))->GetState();
-            length = 0.5*(a->GetPosition().Vect()
-                          - b->GetPosition().Vect()).Mag();
-        }
-        // EDeposit is in measured charge.
-        CP::THandle<CP::TReconCluster> cluster = nodeObject;
-        double energy
-            = CP::TEventDisplay::Get().CrudeEnergy(cluster->GetEDeposit());
-        double dEdX = energy;
-        if (length > 1*unit::mm) {
-            dEdX /= length;              // Get charge per length;
-            double minEnergy = 0.18*unit::MeV/unit::mm;
-            double maxEnergy = 3.0*unit::MeV/unit::mm;
-            color = TEventDisplay::Get().LogColor(dEdX,minEnergy,maxEnergy,2.0);
-        }
-        uncertainty->SetMainColor(color);
-        uncertainty->SetSourceObject(&(*nodeState));
-        AddElement(uncertainty);
     }
 
-    if (backState) {
+    // Add the back state position and position uncertainty.
+    if (showUncertainty && backState) {
         TLorentzVector nodePos = backState->GetPosition();
         TMatrixD nodeVar(3,3);
         for (int i=0; i<3; ++i) {
@@ -273,6 +279,95 @@ CP::TReconTrackElement::TReconTrackElement(CP::TReconTrack& track,
         AddElement(uncertainty);
     }
 
+#define NODE_DIRECTION
+#ifdef NODE_DIRECTION
+    if (showDirection) {
+        // Add the node direction information.
+        for (CP::TReconNodeContainer::iterator n = nodes.begin();
+             n != nodes.end(); ++n) {
+            CP::THandle<CP::TTrackState> nodeState = (*n)->GetState();
+            if (!nodeState) {
+                CaptError("Node is missing");
+                continue;
+            }
+            TLorentzVector nodePos = nodeState->GetPosition();
+            TVector3 nodeDir = nodeState->GetDirection();
+            TEveLine* directionLine = new TEveLine(2);
+            directionLine->SetLineColor(kRed);
+            directionLine->SetLineStyle(1);
+            directionLine->SetLineWidth(1);
+            directionLine->SetPoint(0,
+                                    nodePos.X(),
+                                    nodePos.Y(),
+                                    nodePos.Z());
+            directionLine->SetPoint(1,
+                                    nodePos.X()+10.0*nodeDir.X(),
+                                    nodePos.Y()+10.0*nodeDir.Y(),
+                                    nodePos.Z()+10.0*nodeDir.Z());
+            AddElement(directionLine);
+        }
+    }
+#endif
+
+#define FRONT_DIRECTION
+#ifdef FRONT_DIRECTION
+    if (showDirection && frontState) {
+        TLorentzVector frontPos = frontState->GetPosition();
+        TVector3 frontDir = frontState->GetDirection();
+        TEveLine* directionLine = new TEveLine(2);
+        directionLine->SetLineColor(kCyan-9);
+        directionLine->SetLineStyle(1);
+        directionLine->SetLineWidth(1);
+        TVector3 tipPos = frontPos.Vect() - 140.0*frontDir;
+        directionLine->SetPoint(0, frontPos.X(), frontPos.Y(), frontPos.Z());
+        directionLine->SetPoint(1, tipPos.X(), tipPos.Y(), tipPos.Z());
+        AddElement(directionLine);
+        TMatrixD tipVar(3,3);
+        for (int i=0; i<3; ++i) {
+            for (int j=0; j<3; ++j) {
+                tipVar(i,j) = 140.0*140.0*frontState->GetDirectionCovariance(i,j);
+            }
+        }
+        CP::TMatrixElement* uncertainty
+            = new CP::TMatrixElement("Uncertainty",
+                                     tipPos,
+                                     tipVar,
+                                     false);
+        uncertainty->SetMainColor(kCyan-9);
+        uncertainty->SetSourceObject(&(*backState));
+        AddElement(uncertainty);
+    }
+#endif
+
+#define BACK_DIRECTION
+#ifdef BACK_DIRECTION
+    if (showDirection && backState) {
+        TLorentzVector backPos = backState->GetPosition();
+        TVector3 backDir = backState->GetDirection();
+        TEveLine* directionLine = new TEveLine(2);
+        directionLine->SetLineColor(kGreen+2);
+        directionLine->SetLineStyle(1);
+        directionLine->SetLineWidth(1);
+        TVector3 tipPos = backPos.Vect() + 140.0*backDir;
+        directionLine->SetPoint(0, backPos.X(), backPos.Y(), backPos.Z());
+        directionLine->SetPoint(1, tipPos.X(), tipPos.Y(), tipPos.Z());
+        AddElement(directionLine);
+        TMatrixD tipVar(3,3);
+        for (int i=0; i<3; ++i) {
+            for (int j=0; j<3; ++j) {
+                tipVar(i,j) = 140.0*140.0*backState->GetDirectionCovariance(i,j);
+            }
+        }
+        CP::TMatrixElement* uncertainty
+            = new CP::TMatrixElement("Uncertainty",
+                                     tipPos,
+                                     tipVar,
+                                     false);
+        uncertainty->SetMainColor(kGreen+2);
+        uncertainty->SetSourceObject(&(*backState));
+        AddElement(uncertainty);
+    }
+#endif
 
 }
 

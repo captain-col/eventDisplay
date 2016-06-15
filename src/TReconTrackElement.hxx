@@ -13,7 +13,9 @@ namespace CP {
 /// A Eve Element object to represent TReconTrack.
 class CP::TReconTrackElement: public TEveElementList {
 public:
-    TReconTrackElement(CP::TReconTrack& track, bool showUncertainty);
+    TReconTrackElement(CP::TReconTrack& track,
+                       bool showUncertainty,
+                       bool showDirection);
     virtual ~TReconTrackElement();
 };
 #endif

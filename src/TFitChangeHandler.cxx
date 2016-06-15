@@ -196,7 +196,11 @@ int CP::TFitChangeHandler::ShowReconTrack(
     // Get a new index
     ++index;
 
-    TReconTrackElement *eveTrack = new TReconTrackElement(*obj,true);
+    TReconTrackElement *eveTrack
+        = new TReconTrackElement(
+            *obj, true,
+            (CP::TEventDisplay::Get().GUI().GetShowFitsDirectionButton()
+             ->IsOn()));
     list->AddElement(eveTrack);
 
     // Draw the clusters.
@@ -204,7 +208,7 @@ int CP::TFitChangeHandler::ShowReconTrack(
         .GetShowConstituentClustersButton()->IsOn()) {
         for (CP::TReconNodeContainer::iterator n = obj->GetNodes().begin();
              n != obj->GetNodes().end(); ++n) {
-            index = ShowReconObject(eveTrack,(*n)->GetObject(),index, true);
+            index = ShowReconObject(eveTrack,(*n)->GetObject(),index, false);
         }
     }
 
