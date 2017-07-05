@@ -310,6 +310,9 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 digitPlot->SetBinError(bin,1.0);
             }
             else {
+                // There may be more than one sample per histogram bin (to
+                // make the plotting faster), so plot the maximum sample value
+                // in the histogram bin.
                 int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
                 double v = digitPlot->GetBinContent(bin);
                 if (std::abs(s) > std::abs(v)) {
@@ -322,8 +325,31 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
     
+#ifdef USE_ABSOLUTE_MAXIMUM
     maxVal= std::min(maxVal,overSampling*10000.0);
-
+#else
+    double maxRMS = 0.0;
+    double maxSamples = 1.0;
+    for (int ix = 1; ix < digitPlot->GetNbinsX(); ++ix) {
+        double channelRMS = 0.0;
+        double channelAvg = 0.0;
+        double channelSamples = 1.0;
+        for (int iy = 1; iy < digitPlot->GetNbinsY(); ++iy) {
+            double s = digitPlot->GetBinContent(ix,iy);
+            channelRMS += s*s;
+            channelAvg += s;
+            channelSamples += 1.0;
+        }
+        channelRMS /= channelSamples;
+        channelAvg /= channelSamples;
+        channelRMS = channelRMS - channelAvg*channelAvg;
+        maxRMS += std::sqrt(std::abs(channelRMS));
+        maxSamples += 1.0;
+    }
+    maxRMS /= maxSamples;
+    maxVal = std::max(5.0*maxRMS,5.0);
+#endif
+    
     // Get the right canvas to update.
     TCanvas* canvas = NULL;
     switch (plane) {
@@ -401,11 +427,12 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
-    if (hits) {
+    if (hits && hits->size()>1) {
         // Find the color ranges.
         std::vector<double> charges;
         for (CP::THitSelection::iterator h = hits->begin();
              h != hits->end(); ++h) {
+            if (!(*h)) continue;
             TGeometryId id = (*h)->GetGeomId();
             TChannelId cid = (*h)->GetChannelId();
             if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
@@ -435,7 +462,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         box7->SetFillColor(kGreen-3);
         graphicsDelete->push_back(box7);
 
-        if (!showDigitSamples) {
+        if (!showDigitSamples && charges.size()>0) {
             TLegend* hitChargeLegend = new TLegend(0.8,0.8,1.0,1.0);
             std::ostringstream label;
             label << unit::AsString(charges[0],"charge")
