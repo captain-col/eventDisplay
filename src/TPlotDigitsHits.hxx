@@ -23,6 +23,8 @@ public:
 
 private:
 
+    void DrawTPCHits(int plane, double timeUnit);
+    
     /// The time digitization step.
     double fDigitStep;
 
@@ -34,11 +36,15 @@ private:
     TH2F* fVPlaneHist;
     TH2F* fUPlaneHist;
 
-    /// A vector of objects that needs to be eventually deleted.
-    std::vector<TObject*> fGraphicsXDelete;
-    std::vector<TObject*> fGraphicsVDelete;
+    /// A vectors of objects that needs to be eventually deleted from the U,
+    /// V, and X canvas (respectively).
     std::vector<TObject*> fGraphicsUDelete;
+    std::vector<TObject*> fGraphicsVDelete;
+    std::vector<TObject*> fGraphicsXDelete;
 
+    /// The objects that will need to be deleted from the current working
+    /// canvas (a pointer to one of fGraphics[UVX]Delete;
+    std::vector<TObject*> *fCurrentGraphicsDelete;
 };
 
 #endif

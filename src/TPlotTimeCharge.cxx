@@ -198,10 +198,6 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     }
 
     fElectronLifeFunction->SetParameters(bestLife, bestNorm);
-    
-    ///TFitResultPtr result = graph->Fit(fElectronLifeFunction,"su","",
-    ///                                   xMin+(xMax-xMin)/20.0,
-    ///                                  xMax-(xMax-xMin)/20.0);
     TFitResultPtr result = graph->Fit(fElectronLifeFunction,"su","",
                                       xMin,
                                       xMax);

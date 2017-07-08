@@ -38,7 +38,7 @@ namespace {
         if (pulse) return pulse->GetFirstSample();
         const CP::TCalibPulseDigit* calib 
             = dynamic_cast<const CP::TCalibPulseDigit*>(d);
-        if (calib) return calib->GetFirstSample()/1000;
+        if (calib) return calib->GetFirstSample()/unit::microsecond;
         return 0.0;
     }
 
@@ -48,7 +48,7 @@ namespace {
         if (pulse) return pulse->GetFirstSample()+pulse->GetSampleCount();
         const CP::TCalibPulseDigit* calib 
             = dynamic_cast<const CP::TCalibPulseDigit*>(d);
-        if (calib) return calib->GetLastSample()/1000;
+        if (calib) return calib->GetLastSample()/unit::microsecond;
         return 0.0;
     }
 
@@ -62,7 +62,8 @@ namespace {
         return 0;
     }
 
-    double GetDigitSampleTime(const CP::TDigit* d) {
+    // This will be 1 for raw digits and 500ns for calibrated digits.
+    double GetDigitSampleStep(const CP::TDigit* d) {
         double diff = GetDigitLastTime(d) - GetDigitFirstTime(d);
         return diff/GetDigitSampleCount(d);
     }
@@ -95,18 +96,17 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     ///////////////////////////////////////////////////////////////////
     // Delete any objects that were plotted on the canvas.
     ///////////////////////////////////////////////////////////////////
-    std::vector<TObject*> *graphicsDelete = NULL;
     switch(plane) {
-    case 0: graphicsDelete = &fGraphicsXDelete; break;
-    case 1: graphicsDelete = &fGraphicsVDelete; break;
-    case 2: graphicsDelete = &fGraphicsUDelete; break;
+    case 0: fCurrentGraphicsDelete = &fGraphicsXDelete; break;
+    case 1: fCurrentGraphicsDelete = &fGraphicsVDelete; break;
+    case 2: fCurrentGraphicsDelete = &fGraphicsUDelete; break;
     }
     
-    for (std::vector<TObject*>::iterator g = graphicsDelete->begin();
-         g != graphicsDelete->end(); ++g) {
+    for (std::vector<TObject*>::iterator g = fCurrentGraphicsDelete->begin();
+         g != fCurrentGraphicsDelete->end(); ++g) {
         delete (*g);
     }
-    graphicsDelete->clear();
+    fCurrentGraphicsDelete->clear();
 
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
 
@@ -130,80 +130,104 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
     
-    if (!drift) {
-        CaptLog("No drift signals for this event"); 
-        return;
-    }
-
     // True if the sample values should be filled into the histogram (slow)
     bool showDigitSamples = true;
     if (!CP::TEventDisplay::Get().GUI().GetShowDigitSamplesButton()->IsOn()) {
         showDigitSamples = false;
     }
 
+    if (!drift) {
+        CaptLog("No drift signals for this event"); 
+        showDigitSamples = false;
+    }
+
+    double digitSampleStep = 1;
+    double signalStart = 1E+6;
+    double signalEnd = -1E+6;
+    int signalBins = 0;
+
     // Find the Z axis range for the histogram.  The median samples the
     // middle.  The max and min are the "biggest" distance from the median.
     std::vector<double> samples;
-    for (CP::TDigitContainer::const_iterator d = drift->begin();
-         d != drift->end(); ++d) {
-        // Figure out if this is in the right plane, and get the wire
-        // number.
-        const CP::TDigit* digit 
-            = dynamic_cast<const CP::TDigit*>(*d);
-        if (!digit) continue;
-        CP::TGeometryId id 
-            = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
-        if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
-        // Save the sample to find the median.
-        for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
-            double s = GetDigitSample(*d,i);
+    double medianSample = 0.0;
+    if (drift) {
+        for (CP::TDigitContainer::const_iterator d = drift->begin();
+             d != drift->end(); ++d) {
+            // Figure out if this is in the right plane, and get the wire
+            // number.
+            const CP::TDigit* digit 
+                = dynamic_cast<const CP::TDigit*>(*d);
+            if (!digit) continue;
+            CP::TGeometryId id 
+                = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
+            if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            // Save the sample to find the median.
+            for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
+                double s = GetDigitSample(*d,i);
             if (!std::isfinite(s)) continue;
             samples.push_back(s);
+            }
         }
-    }
-
-    // Crash prevention.  It shouldn't be possible to have digits without any
-    // samples, but...
-    if (samples.empty()) return;
-    
-    std::sort(samples.begin(),samples.end());
-    double medianSample = samples[0.5*samples.size()];
-    double maxSample = std::abs(samples[0.99*samples.size()]-medianSample);
-    maxSample = std::max(maxSample,
-                         std::abs(samples[0.01*samples.size()]-medianSample));
-
-    // Find the time axis range based on the times of the bins with a signal.
-    std::vector<double> times;
-    double digitSampleTime = 1;
-    for (CP::TDigitContainer::const_iterator d = drift->begin();
-         d != drift->end(); ++d) {
-        // Figure out if this is in the right plane, and get the wire
-        // number.
-        const CP::TDigit* digit 
-            = dynamic_cast<const CP::TDigit*>(*d);
-        if (!digit) continue;
-        CP::TGeometryId id 
-            = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
-        if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
-        // Find the time range.
-        digitSampleTime = GetDigitSampleTime(*d);
-        double maxSignal = 0.0;
-        for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
-            double s = GetDigitSample(*d,i);
-            if (!std::isfinite(s)) continue;
-            maxSignal = std::max(maxSignal,
-                                 std::abs(GetDigitSample(*d,i)-medianSample));
+        // Crash prevention.  It shouldn't be possible to have digits without
+        // any samples, but...
+        if (samples.empty()) return;
+        
+        std::sort(samples.begin(),samples.end());
+        medianSample = samples[0.5*samples.size()];
+        double maxSample = std::abs(samples[0.99*samples.size()]-medianSample);
+        maxSample = std::max(
+            maxSample,
+            std::abs(samples[0.01*samples.size()]-medianSample));
+        
+        // Find the time axis range based on the times of the bins with a
+        // signal.
+        std::vector<double> times;
+        for (CP::TDigitContainer::const_iterator d = drift->begin();
+             d != drift->end(); ++d) {
+            // Figure out if this is in the right plane, and get the wire
+            // number.
+            const CP::TDigit* digit 
+                = dynamic_cast<const CP::TDigit*>(*d);
+            if (!digit) continue;
+            CP::TGeometryId id 
+                = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
+            if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            // Find the time range.
+            digitSampleStep = GetDigitSampleStep(*d);
+            double maxSignal = 0.0;
+            for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
+                double s = GetDigitSample(*d,i);
+                if (!std::isfinite(s)) continue;
+                maxSignal = std::max(
+                    maxSignal,
+                    std::abs(GetDigitSample(*d,i)-medianSample));
+            }
+            if (maxSignal < 0.25*maxSample) continue;
+            times.push_back(GetDigitFirstTime(*d));
+            times.push_back(GetDigitLastTime(*d));
         }
-        if (maxSignal < 0.25*maxSample) continue;
-        times.push_back(GetDigitFirstTime(*d));
-        times.push_back(GetDigitLastTime(*d));
-    }
-    std::sort(times.begin(),times.end());
+        std::sort(times.begin(),times.end());
     
-    double signalStart = times[0.01*times.size()];
-    double signalEnd = times[0.99*times.size()];
-    int signalBins = (signalEnd-signalStart)/digitSampleTime;
-
+        signalStart = times[0.01*times.size()];
+        signalEnd = times[0.99*times.size()];
+        signalBins = (signalEnd-signalStart)/digitSampleStep;
+    }
+    else if (event->Get<CP::THitSelection>("~/hits/drift")) {
+        CP::THandle<CP::THitSelection> hits
+            = event->Get<CP::THitSelection>("~/hits/drift");
+        for (CP::THitSelection::iterator h = hits->begin();
+             h != hits->end(); ++h) {
+            if (signalStart>(*h)->GetTime()) signalStart = (*h)->GetTime();
+            if (signalEnd<(*h)->GetTime()) signalEnd = (*h)->GetTime();
+        }
+        signalBins = 1000;
+        wireTimeStep = 500;
+        digitSampleStep = 0.5;
+        signalStart /= unit::microsecond;
+        signalEnd /= unit::microsecond;
+        samplesInTime = true;
+    }
+    
     // Find the number of wires to be shown on the plot of digits and hits.
     int wireCount = CP::TGeometryInfo::Get().GetWireCount(plane);
     std::ostringstream histTitle;
@@ -214,7 +238,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     // hits.  The oversampling reduces the number of samples shown so that the
     // display goes faster.
     int overSampling = 1.0;
-    if (!CP::TEventDisplay::Get().GUI().GetShowDigitSamplesButton()->IsOn()) {
+    if (!showDigitSamples) {
         // In this case, the digits won't be shown, but we still need to have
         // enough bins to allow zooming.
         overSampling = 50.0;
@@ -282,46 +306,51 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         break;
     }    
 
-    double maxVal = 0;
-    for (CP::TDigitContainer::const_iterator d = drift->begin();
-         d != drift->end(); ++d) {
-        // Figure out if this is in the right plane, and get the wire
-        // number.
-        const CP::TDigit* digit 
-            = dynamic_cast<const CP::TDigit*>(*d);
-        if (!digit) continue;
-        CP::TGeometryId id 
-            = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
-        if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
-        if (wireTimeStep < 0.0) {
-            wireTimeOffset=chanCalib.GetTimeConstant(digit->GetChannelId(),0);
-            wireTimeStep=chanCalib.GetTimeConstant(digit->GetChannelId(),1);
-        }
-        // Plot the digits for this channel.
-        if (!showDigitSamples) continue;
-        double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
-        for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
-            double tbin = GetDigitFirstTime(digit) 
-                + GetDigitSampleTime(digit)*i;
-            double s = GetDigitSample(digit,i)-medianSample;
-            if (!std::isfinite(s)) continue;
-            if (samplesInTime) {
-                int bin = digitPlot->Fill(wire,tbin+1E-6,s);
-                digitPlot->SetBinError(bin,1.0);
+    double maxVal = 10;
+    if (drift) {
+        for (CP::TDigitContainer::const_iterator d = drift->begin();
+             d != drift->end(); ++d) {
+            // Figure out if this is in the right plane, and get the wire
+            // number.
+            const CP::TDigit* digit 
+                = dynamic_cast<const CP::TDigit*>(*d);
+            if (!digit) continue;
+            CP::TGeometryId id 
+                = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
+            if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            if (wireTimeStep < 0.0) {
+                wireTimeOffset=chanCalib.GetTimeConstant(
+                    digit->GetChannelId(),0);
+                wireTimeStep=chanCalib.GetTimeConstant(
+                    digit->GetChannelId(),1);
             }
-            else {
-                // There may be more than one sample per histogram bin (to
-                // make the plotting faster), so plot the maximum sample value
-                // in the histogram bin.
-                int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
-                double v = digitPlot->GetBinContent(bin);
-                if (std::abs(s) > std::abs(v)) {
-                    digitPlot->SetBinContent(bin,s);
+            // Plot the digits for this channel.
+            if (!showDigitSamples) continue;
+            double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
+            for (std::size_t i = 0; i < GetDigitSampleCount(digit); ++i) {
+                double tbin = GetDigitFirstTime(digit) 
+                    + GetDigitSampleStep(digit)*i;
+                double s = GetDigitSample(digit,i)-medianSample;
+                if (!std::isfinite(s)) continue;
+                if (samplesInTime) {
+                    int bin = digitPlot->Fill(wire,tbin+1E-6,s);
                     digitPlot->SetBinError(bin,1.0);
                 }
+                else {
+                    // There may be more than one sample per histogram bin (to
+                    // make the plotting faster), so plot the maximum sample
+                    // value in the histogram bin.
+                    int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
+                    double v = digitPlot->GetBinContent(bin);
+                    if (std::abs(s) > std::abs(v)) {
+                        digitPlot->SetBinContent(bin,s);
+                        digitPlot->SetBinError(bin,1.0);
+                    }
+                }
+                int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
+                maxVal = std::max(maxVal,
+                                  std::abs(digitPlot->GetBinContent(bin)));
             }
-            int bin = digitPlot->FindFixBin(wire,tbin+1E-6);
-            maxVal = std::max(maxVal,std::abs(digitPlot->GetBinContent(bin)));
         }
     }
     
@@ -405,7 +434,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             TChannelId cid = (*h)->GetChannelId();
             double hTime = (*h)->GetTime();
             if (!samplesInTime) hTime -= wireTimeOffset;
-            double dTime = hTime/(wireTimeStep/digitSampleTime);
+            double dTime = hTime/(wireTimeStep/digitSampleStep);
             int n=0;
             double px[10];
             double py[10];
@@ -417,47 +446,51 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             pline->SetLineWidth(1);
             pline->SetLineColor(kGreen);
             pline->Draw();
-            graphicsDelete->push_back(pline);
+            fCurrentGraphicsDelete->push_back(pline);
         }
     }
+
+    DrawTPCHits(plane, (wireTimeStep/digitSampleStep));
+}
+
+void CP::TPlotDigitsHits::DrawTPCHits(int plane, double timeUnit) {
+    CP::TChannelCalib chanCalib;
     
-    ////////////////////////////////////////////////////////////
-    // Now plot the 2D hits on the histogram.
-    ////////////////////////////////////////////////////////////
-    
+    CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
+
     if (hits && hits->size()>1) {
         TBox* box1 = new TBox(0.0, 0.0, 1.0, 1.0);
         box1->SetFillColor(kGreen-7);
-        graphicsDelete->push_back(box1);
+        fCurrentGraphicsDelete->push_back(box1);
         TBox* box2 = new TBox(0.0, 0.0, 1.0, 1.0);
         box2->SetFillColor(kGreen+2);
-        graphicsDelete->push_back(box2);
+        fCurrentGraphicsDelete->push_back(box2);
         TBox* box3 = new TBox(0.0, 0.0, 1.0, 1.0);
         box3->SetFillColor(kCyan-7);
-        graphicsDelete->push_back(box3);
+        fCurrentGraphicsDelete->push_back(box3);
         TBox* box4 = new TBox(0.0, 0.0, 1.0, 1.0);
         box4->SetFillColor(kCyan+1);
-        graphicsDelete->push_back(box4);
+        fCurrentGraphicsDelete->push_back(box4);
         TBox* box5 = new TBox(0.0, 0.0, 1.0, 1.0);
         box5->SetFillColor(kBlue);
-        graphicsDelete->push_back(box5);
+        fCurrentGraphicsDelete->push_back(box5);
         TBox* box6 = new TBox(0.0, 0.0, 1.0, 1.0);
         box6->SetFillColor(kBlue-7);
-        graphicsDelete->push_back(box6);
+        fCurrentGraphicsDelete->push_back(box6);
         TBox* box7 = new TBox(0.0, 0.0, 1.0, 1.0);
         box7->SetFillColor(kRed);
-        graphicsDelete->push_back(box7);
+        fCurrentGraphicsDelete->push_back(box7);
         TBox* box8 = new TBox(0.0, 0.0, 1.0, 1.0);
         box8->SetFillColor(kRed+1);
-        graphicsDelete->push_back(box8);
+        fCurrentGraphicsDelete->push_back(box8);
         TBox* box9 = new TBox(0.0, 0.0, 1.0, 1.0);
         box9->SetFillColor(kMagenta);
-        graphicsDelete->push_back(box9);
+        fCurrentGraphicsDelete->push_back(box9);
         TBox* box0 = new TBox(0.0, 0.0, 1.0, 1.0);
         box0->SetFillColor(kBlack+1);
-        graphicsDelete->push_back(box0);
+        fCurrentGraphicsDelete->push_back(box0);
 
         TLegend* hitChargeLegend = new TLegend(0.8,0.8,1.0,1.0);
         std::ostringstream label;
@@ -515,7 +548,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         hitChargeLegend->AddEntry(box9,label.str().c_str(),"f");
         label.str("");;
         
-        graphicsDelete->push_back(hitChargeLegend);
+        fCurrentGraphicsDelete->push_back(hitChargeLegend);
         hitChargeLegend->Draw();
 
         for (CP::THitSelection::iterator h = hits->begin();
@@ -523,22 +556,23 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             TGeometryId id = (*h)->GetGeomId();
             TChannelId cid = (*h)->GetChannelId();
             if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            double wireTimeOffset = chanCalib.GetTimeConstant(cid,0);
             // The wire number (offset for the middle of the bin).
             double wire = CP::GeomId::Captain::GetWireNumber(id) + 0.5;
             // The hit charge
             double charge = (*h)->GetCharge();
             // The hit time.
             double hTime = (*h)->GetTime();
-            if (!samplesInTime) hTime -= wireTimeOffset;
+            hTime = hTime + gPad->GetUymin()*timeUnit - wireTimeOffset;
             // The digitized hit time.
-            double dTime = hTime/(wireTimeStep/digitSampleTime);
+            double dTime = hTime/timeUnit;
             // The digitized hit start time.
             double dStartTime = ((*h)->GetTimeStart()-(*h)->GetTime());
-            dStartTime /= (wireTimeStep/digitSampleTime);
+            dStartTime /= timeUnit;
             dStartTime += dTime;
             // The digitized hit start time.
             double dStopTime = ((*h)->GetTimeStop()-(*h)->GetTime());
-            dStopTime /= (wireTimeStep/digitSampleTime);
+            dStopTime /= timeUnit;
             dStopTime += dTime;
             // The hit RMS.
             double rms = (*h)->GetTimeRMS();
@@ -576,8 +610,8 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             else {
                 color = box0->GetFillColor();
             }
-            dRMS = rms/(wireTimeStep/digitSampleTime);
-            
+            dRMS = rms/timeUnit;
+
             {
                 int n=0;
                 double px[10];
@@ -590,7 +624,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 pline->SetLineWidth(1);
                 pline->SetLineColor(color);
                 pline->Draw();
-                graphicsDelete->push_back(pline);
+                fCurrentGraphicsDelete->push_back(pline);
             }
             
             if (dStartTime < dTime && dTime < dStopTime) {
@@ -606,7 +640,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 pline->SetLineStyle(3);
                 pline->SetLineColor(color);
                 pline->Draw();
-                graphicsDelete->push_back(pline);
+                fCurrentGraphicsDelete->push_back(pline);
             }
 
             if (dRMS > 0) {
@@ -621,7 +655,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 pline->SetLineWidth(3);
                 pline->SetLineColor(color);
                 pline->Draw();
-                graphicsDelete->push_back(pline);
+                fCurrentGraphicsDelete->push_back(pline);
             }
         }
     }
