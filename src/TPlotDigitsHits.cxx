@@ -428,88 +428,95 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
     if (hits && hits->size()>1) {
-        // Find the color ranges.
-        std::vector<double> charges;
-        for (CP::THitSelection::iterator h = hits->begin();
-             h != hits->end(); ++h) {
-            if (!(*h)) continue;
-            TGeometryId id = (*h)->GetGeomId();
-            TChannelId cid = (*h)->GetChannelId();
-            if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
-            charges.push_back((*h)->GetCharge());
-        }
-        std::sort(charges.begin(), charges.end());
-
         TBox* box1 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box1->SetFillColor(kCyan-7);
+        box1->SetFillColor(kGreen-7);
         graphicsDelete->push_back(box1);
         TBox* box2 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box2->SetFillColor(kBlue-7);
+        box2->SetFillColor(kGreen+2);
         graphicsDelete->push_back(box2);
         TBox* box3 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box3->SetFillColor(kRed+1);
+        box3->SetFillColor(kCyan-7);
         graphicsDelete->push_back(box3);
         TBox* box4 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box4->SetFillColor(kRed);
+        box4->SetFillColor(kCyan+1);
         graphicsDelete->push_back(box4);
         TBox* box5 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box5->SetFillColor(kMagenta);
+        box5->SetFillColor(kBlue);
         graphicsDelete->push_back(box5);
         TBox* box6 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box6->SetFillColor(kYellow+1);
+        box6->SetFillColor(kBlue-7);
         graphicsDelete->push_back(box6);
         TBox* box7 = new TBox(0.0, 0.0, 1.0, 1.0);
-        box7->SetFillColor(kGreen-3);
+        box7->SetFillColor(kRed);
         graphicsDelete->push_back(box7);
+        TBox* box8 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box8->SetFillColor(kRed+1);
+        graphicsDelete->push_back(box8);
+        TBox* box9 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box9->SetFillColor(kMagenta);
+        graphicsDelete->push_back(box9);
+        TBox* box0 = new TBox(0.0, 0.0, 1.0, 1.0);
+        box0->SetFillColor(kBlack+1);
+        graphicsDelete->push_back(box0);
 
-        if (!showDigitSamples && charges.size()>0) {
-            TLegend* hitChargeLegend = new TLegend(0.8,0.8,1.0,1.0);
-            std::ostringstream label;
-            label << unit::AsString(charges[0],"charge")
-                  << " - "
-                  << unit::AsString(charges[0.01*charges.size()],"charge");
-            hitChargeLegend->AddEntry(box1,label.str().c_str(),"f");
-            label.str("");;
-
-            label << unit::AsString(charges[0.01*charges.size()],"charge")
-                  << " - "
-                  << unit::AsString(charges[0.2*charges.size()],"charge");
-            hitChargeLegend->AddEntry(box2,label.str().c_str(),"f");
-            label.str("");;
-
-            label << unit::AsString(charges[0.2*charges.size()],"charge")
-                  << " - "
-                  << unit::AsString(charges[0.4*charges.size()],"charge");
-            hitChargeLegend->AddEntry(box3,label.str().c_str(),"f");
-            label.str("");;
-
-            label << unit::AsString(charges[0.4*charges.size()],"charge")
-                  << " - "
-                  << unit::AsString(charges[0.6*charges.size()],"charge");
-            hitChargeLegend->AddEntry(box4,label.str().c_str(),"f");
-            label.str("");;
-
-            label << unit::AsString(charges[0.6*charges.size()],"charge")
-                  << " - "
-                  << unit::AsString(charges[0.8*charges.size()],"charge");
-            hitChargeLegend->AddEntry(box5,label.str().c_str(),"f");
-            label.str("");;
-
-            label << unit::AsString(charges[0.8*charges.size()],"charge")
-                  << " - "
-                  << unit::AsString(charges[0.99*charges.size()],"charge");
-            hitChargeLegend->AddEntry(box6,label.str().c_str(),"f");
-            label.str("");;
-
-            label << unit::AsString(charges[0.99*charges.size()],"charge")
-                  << " - "
-                  << unit::AsString(charges[charges.size()-1],"charge");
-            hitChargeLegend->AddEntry(box7,label.str().c_str(),"f");
-            label.str("");;
-
-            graphicsDelete->push_back(hitChargeLegend);
-            hitChargeLegend->Draw();
-        }
+        TLegend* hitChargeLegend = new TLegend(0.8,0.8,1.0,1.0);
+        std::ostringstream label;
+        label << unit::AsString(0.0,"charge")
+              << " - "
+              << unit::AsString(4000.0,"charge");
+        hitChargeLegend->AddEntry(box1,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(4000.0,"charge")
+              << " - "
+              << unit::AsString(6000.0,"charge");
+        hitChargeLegend->AddEntry(box2,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(6000.0,"charge")
+              << " - "
+              << unit::AsString(8000.0,"charge");
+        hitChargeLegend->AddEntry(box3,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(8000.0,"charge")
+              << " - "
+              << unit::AsString(10000.0,"charge");
+        hitChargeLegend->AddEntry(box4,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(10000.0,"charge")
+              << " - "
+              << unit::AsString(13000.0,"charge");
+        hitChargeLegend->AddEntry(box5,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(13000.0,"charge")
+              << " - "
+              << unit::AsString(16000.0,"charge");
+        hitChargeLegend->AddEntry(box6,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(16000.0,"charge")
+              << " - "
+              << unit::AsString(20000.0,"charge");
+        hitChargeLegend->AddEntry(box7,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(20000.0,"charge")
+              << " - "
+              << unit::AsString(25000.0,"charge");
+        hitChargeLegend->AddEntry(box8,label.str().c_str(),"f");
+        label.str("");;
+        
+        label << unit::AsString(25000.0,"charge")
+              << " - "
+              << unit::AsString(32000.0,"charge");
+        hitChargeLegend->AddEntry(box9,label.str().c_str(),"f");
+        label.str("");;
+        
+        graphicsDelete->push_back(hitChargeLegend);
+        hitChargeLegend->Draw();
 
         for (CP::THitSelection::iterator h = hits->begin();
              h != hits->end(); ++h) {
@@ -539,60 +546,36 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             double dRMS = -1;
             
             int color = kRed;
-#ifndef OLD_COLOR
             if (charge < 4000.0) {
-                color = kGreen-7;
-            }
-            else if (charge < 6000.0) {
-                color = kGreen+2;
-            }
-            else if (charge < 8000.0) {
-                color = kCyan-7;
-            }
-            else if (charge < 10000.0) {
-                color = kCyan+1;
-            }
-            else if (charge < 13000.0) {
-                color = kBlue;
-            }
-            else if (charge < 16000.0) {
-                color = kBlue-7;
-            }
-            else if (charge < 20000.0) {
-                color = kRed;
-            }
-            else if (charge < 25000.0) {
-                color = kRed+1;
-            }
-            else if (charge < 32000.0) {
-                color = kMagenta;
-            }
-            else {
-                color = kBlack+1;
-            }
-#else
-            if (charge > charges[0.99*charges.size()]) {
-                color = box7->GetFillColor();
-            }
-            else if (charge > charges[0.8*charges.size()]) {
-                color = box6->GetFillColor();
-            }
-            else if (charge > charges[0.6*charges.size()]) {
-                color = box5->GetFillColor();
-            }
-            else if (charge > charges[0.4*charges.size()]) {
-                color = box4->GetFillColor();
-            }
-            else if (charge > charges[0.2*charges.size()]) {
-                color = box3->GetFillColor();
-            }
-            else if (charge > charges[0.01*charges.size()]) {
-                color = box2->GetFillColor();
-            }
-            else {
                 color = box1->GetFillColor();
             }
-#endif
+            else if (charge < 6000.0) {
+                color = box2->GetFillColor();
+            }
+            else if (charge < 8000.0) {
+                color = box3->GetFillColor();
+            }
+            else if (charge < 10000.0) {
+                color = box4->GetFillColor();
+            }
+            else if (charge < 13000.0) {
+                color = box5->GetFillColor();
+            }
+            else if (charge < 16000.0) {
+                color = box6->GetFillColor();
+            }
+            else if (charge < 20000.0) {
+                color = box7->GetFillColor();
+            }
+            else if (charge < 25000.0) {
+                color = box8->GetFillColor();
+            }
+            else if (charge < 32000.0) {
+                color = box9->GetFillColor();
+            }
+            else {
+                color = box0->GetFillColor();
+            }
             dRMS = rms/(wireTimeStep/digitSampleTime);
             
             {
