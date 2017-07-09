@@ -404,10 +404,17 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 << "." << event->GetContext().GetEvent() << ":";
 
     switch (plane) {
-    case 0: canvasTitle << " X Digits"; break;
-    case 1: canvasTitle << " V Digits"; break;
-    case 2: canvasTitle << " U Digits"; break;
+    case 0: canvasTitle << " X"; break;
+    case 1: canvasTitle << " V"; break;
+    case 2: canvasTitle << " U"; break;
     default: CaptError("Invalid canvas plane " << plane);
+    }
+
+    if (samplesInTime) {
+        canvasTitle << " Time vs Wire";
+    }
+    else {
+        canvasTitle << " Sample Number vs Wire";
     }
     canvas->SetTitle(canvasTitle.str().c_str());
 
@@ -418,8 +425,6 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     digitPlot->SetContour(100);
     digitPlot->SetStats(false);
     digitPlot->Draw("colz");
-
-    gPad->Update();
 
     ////////////////////////////////////////////////////////////
     // Now plot the PMT hit times on the histogram.
@@ -451,6 +456,8 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     }
 
     DrawTPCHits(plane, (wireTimeStep/digitSampleStep));
+
+    gPad->Update();
 }
 
 void CP::TPlotDigitsHits::DrawTPCHits(int plane, double timeUnit) {
@@ -660,6 +667,4 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane, double timeUnit) {
         }
     }
 
-    gPad->Update();
-    
 }

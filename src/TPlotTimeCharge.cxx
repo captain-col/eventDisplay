@@ -243,7 +243,10 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
 
     CP::THandle<CP::THitSelection> hits
         = event->Get<CP::THitSelection>("~/hits/drift");
-    if (!hits) return;
+    if (!hits) {
+        CaptError("No hits to draw");
+        return;
+    }
 
     bool drawXHits
         = CP::TEventDisplay::Get().GUI().GetShowXTimeChargeButton()->IsOn();
@@ -268,8 +271,9 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     TCanvas* canvasUDigits = (TCanvas*) gROOT->FindObject("canvasUDigits");
     TCanvas* canvasVDigits = (TCanvas*) gROOT->FindObject("canvasVDigits");
     TCanvas* canvasXDigits = (TCanvas*) gROOT->FindObject("canvasXDigits");
-
-    // Find the time range shown on the time vs wire.
+    
+    // Find the time range shown on the time vs wire plot.  If the plot is in
+    // sample vs wire, then this will need to be corrected to be in time.
     double minDigitTime = 1E+22;
     double maxDigitTime = -1E+22;
     if (!canvasUDigits && !canvasVDigits && !canvasXDigits) {
@@ -277,31 +281,60 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         maxDigitTime = 1E+22;
     }
     if (canvasUDigits) {
-        minDigitTime = std::min(canvasUDigits->GetUymin(),minDigitTime);
-        maxDigitTime = std::max(canvasUDigits->GetUymax(),maxDigitTime);
+        double s = 1.0;
+        double b = 0.0;
+        std::string title = canvasUDigits->GetTitle();
+        if (title.find("Sample") != std::string::npos) {
+            // Set *VERY* rough calibration coefficients.
+            s=0.5;
+            b=1600.0;
+        }
+        minDigitTime = std::min(s*canvasUDigits->GetUymin()-b,minDigitTime);
+        maxDigitTime = std::max(s*canvasUDigits->GetUymax()-b,maxDigitTime);
     }
     if (canvasVDigits) {
-        minDigitTime = std::min(canvasVDigits->GetUymin(),minDigitTime);
-        maxDigitTime = std::max(canvasVDigits->GetUymax(),maxDigitTime);
+        double s = 1.0;
+        double b = 0.0;
+        std::string title = canvasVDigits->GetTitle();
+        if (title.find("Sample") != std::string::npos) {
+            // Set *VERY* rough calibration coefficients.
+            s=0.5;
+            b=1600.0;
+        }
+        minDigitTime = std::min(s*canvasVDigits->GetUymin()-b,minDigitTime);
+        maxDigitTime = std::max(s*canvasVDigits->GetUymax()-b,maxDigitTime);
     }
     if (canvasXDigits) {
-        minDigitTime = std::min(canvasXDigits->GetUymin(),minDigitTime);
-        maxDigitTime = std::max(canvasXDigits->GetUymax(),maxDigitTime);
+        double s = 1.0;
+        double b = 0.0;
+        std::string title = canvasXDigits->GetTitle();
+        if (title.find("Sample") != std::string::npos) {
+            // Set *VERY* rough calibration coefficients.
+            s=0.5;
+            b=1600.0;
+        }
+        minDigitTime = std::min(s*canvasXDigits->GetUymin()-b,minDigitTime);
+        maxDigitTime = std::max(s*canvasXDigits->GetUymax()-b,maxDigitTime);
     }
-    
+
+    // Convert to time.
+    minDigitTime *= unit::microsecond;
+    maxDigitTime *= unit::microsecond;
+
     // Fill the graph for the U hits
     points = 0;
     for (CP::THitSelection::iterator h = hits->begin();
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsUWire((*h)->GetGeomId())) continue;
         if (!drawUHits) continue;
-        if ((*h)->GetTime()/unit::microsecond < minDigitTime) continue;
-        if ((*h)->GetTime()/unit::microsecond > maxDigitTime) continue;
+        if ((*h)->GetTime() < minDigitTime) continue;
+        if ((*h)->GetTime() > maxDigitTime) continue;
         if (canvasUDigits) {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
             if (wire < canvasUDigits->GetUxmin()) continue;
             if (wire > canvasUDigits->GetUxmax()) continue;
         }
+        // The histogram is labeled in microseconds.
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -327,13 +360,14 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsVWire((*h)->GetGeomId())) continue;
         if (!drawVHits) continue;
-        if ((*h)->GetTime()/unit::microsecond < minDigitTime) continue;
-        if ((*h)->GetTime()/unit::microsecond > maxDigitTime) continue;
+        if ((*h)->GetTime() < minDigitTime) continue;
+        if ((*h)->GetTime() > maxDigitTime) continue;
         if (canvasVDigits) {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
             if (wire < canvasVDigits->GetUxmin()) continue;
             if (wire > canvasVDigits->GetUxmax()) continue;
         }
+        // The histogram is labeled in microseconds.
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -359,13 +393,14 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
          h != hits->end(); ++h) {
         if (!CP::GeomId::Captain::IsXWire((*h)->GetGeomId())) continue;
         if (!drawXHits) continue;
-        if ((*h)->GetTime()/unit::microsecond < minDigitTime) continue;
-        if ((*h)->GetTime()/unit::microsecond > maxDigitTime) continue;
+        if ((*h)->GetTime() < minDigitTime) continue;
+        if ((*h)->GetTime() > maxDigitTime) continue;
         if (canvasXDigits) {
             double wire = CP::GeomId::Captain::GetWireNumber((*h)->GetGeomId());
             if (wire < canvasXDigits->GetUxmin()) continue;
             if (wire > canvasXDigits->GetUxmax()) continue;
         }
+        // The histogram is labeled in microseconds.
         time[points] = (*h)->GetTime()/unit::microsecond;
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
@@ -407,6 +442,7 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
     titleStream << ";Time #pm #Deltat_{rms} (#mus)";
     titleStream << ";Charge #pm #sigma (electrons)";
 
+    // The histogram is labeled in microseconds.
     TH1F* frame = gPad->DrawFrame(minTime/unit::microsecond-5,
                                   minCharge,
                                   maxTime/unit::microsecond+5,
