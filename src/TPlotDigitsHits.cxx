@@ -93,6 +93,69 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     double wireTimeStep = -1.0;
     double wireTimeOffset = 0.0;
 
+    CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
+
+    // Get the default digits to be drawn.
+    CP::THandle<CP::TDigitContainer> drift
+        = event->Get<CP::TDigitContainer>("~/digits/drift");
+
+    // Check if the user wanted to see deconvolved digits.  Raw digits are
+    // used if the deconvonvolved digits aren't found.
+    bool samplesInTime = false;
+    if (!CP::TEventDisplay::Get().GUI().GetShowRawDigitsButton()->IsOn()
+        or !drift) {
+        CP::THandle<CP::TDigitContainer> tmp
+            = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
+        // If deconvolved digits are found, then use them.
+        if (tmp) {
+            samplesInTime = true;
+            drift = tmp;
+        } 
+    }
+    
+    //////////////////////////////////////////////////
+    // Get the right canvas to update.
+    //////////////////////////////////////////////////
+    TCanvas* canvas = NULL;
+    switch (plane) {
+    case 0: canvas = (TCanvas*) gROOT->FindObject("canvasXDigits"); break;
+    case 1: canvas = (TCanvas*) gROOT->FindObject("canvasVDigits"); break;
+    case 2: canvas = (TCanvas*) gROOT->FindObject("canvasUDigits"); break;
+    default: CaptError("Invalid canvas plane " << plane);
+    }
+
+    // The canvas is missing, so create a new one.
+    if (!canvas) {
+        switch (plane) {
+        case 0: canvas=new TCanvas("canvasXDigits","X Digits",500,300); break;
+        case 1: canvas=new TCanvas("canvasVDigits","V Digits",500,300); break;
+        case 2: canvas=new TCanvas("canvasUDigits","U Digits",500,300); break;
+        default: CaptError("Invalid canvas plane " << plane);
+        }
+    }
+
+    // Update the canvas title.
+    std::ostringstream canvasTitle;
+    canvasTitle << "Event " << event->GetContext().GetRun()
+                << "." << event->GetContext().GetEvent() << ":";
+
+    switch (plane) {
+    case 0: canvasTitle << " X"; break;
+    case 1: canvasTitle << " V"; break;
+    case 2: canvasTitle << " U"; break;
+    default: CaptError("Invalid canvas plane " << plane);
+    }
+
+    if (samplesInTime) {
+        canvasTitle << " Time vs Wire";
+    }
+    else {
+        canvasTitle << " Sample Number vs Wire";
+    }
+    canvas->SetTitle(canvasTitle.str().c_str());
+
+    canvas->cd();
+    
     ///////////////////////////////////////////////////////////////////
     // Delete any objects that were plotted on the canvas.
     ///////////////////////////////////////////////////////////////////
@@ -107,28 +170,10 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         delete (*g);
     }
     fCurrentGraphicsDelete->clear();
-
-    CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
-
-    // True if the sample values are times (not number of samples).
-    bool samplesInTime = false;
-
-    // Get the default digits to be drawn.
-    CP::THandle<CP::TDigitContainer> drift
-        = event->Get<CP::TDigitContainer>("~/digits/drift");
-
-    // Check if the user wanted to see deconvolved digits, or if normal digits
-    // were not found.
-    if (!CP::TEventDisplay::Get().GUI().GetShowRawDigitsButton()->IsOn()
-        or !drift) {
-        CP::THandle<CP::TDigitContainer> tmp
-            = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
-        // If deconvolved digits are found, then use them.
-        if (tmp) {
-            samplesInTime = true;
-            drift = tmp;
-        }
-    }
+    
+    ///////////////////////////////////////////////////////////////////
+    // Find the histogram range (in x and y).
+    ///////////////////////////////////////////////////////////////////
     
     // True if the sample values should be filled into the histogram (slow)
     bool showDigitSamples = true;
@@ -248,7 +293,9 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     }
     signalBins /= overSampling;
     
-    // Connect to the histogram to show.
+    ////////////////////////////////////////////////////////////////
+    // Create the histgram to fill (and delete the old one if needed).
+    ////////////////////////////////////////////////////////////////
     TH2F* digitPlot = NULL;
     switch (plane) {
     case 0:
@@ -306,6 +353,12 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         break;
     }    
 
+    // Draw the empty histogram to get the panel initialized.
+    digitPlot->SetStats(false);
+    digitPlot->Draw("");
+    gPad->Update();
+
+    // Fill the histogram.
     double maxVal = 10;
     if (drift) {
         for (CP::TDigitContainer::const_iterator d = drift->begin();
@@ -379,53 +432,11 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     maxVal = std::max(5.0*maxRMS,5.0);
 #endif
     
-    // Get the right canvas to update.
-    TCanvas* canvas = NULL;
-    switch (plane) {
-    case 0: canvas = (TCanvas*) gROOT->FindObject("canvasXDigits"); break;
-    case 1: canvas = (TCanvas*) gROOT->FindObject("canvasVDigits"); break;
-    case 2: canvas = (TCanvas*) gROOT->FindObject("canvasUDigits"); break;
-    default: CaptError("Invalid canvas plane " << plane);
-    }
-
-    // The canvas is missing, so create a new one.
-    if (!canvas) {
-        switch (plane) {
-        case 0: canvas=new TCanvas("canvasXDigits","X Digits",500,300); break;
-        case 1: canvas=new TCanvas("canvasVDigits","V Digits",500,300); break;
-        case 2: canvas=new TCanvas("canvasUDigits","U Digits",500,300); break;
-        default: CaptError("Invalid canvas plane " << plane);
-        }
-    }
-
-    // Update the canvas title.
-    std::ostringstream canvasTitle;
-    canvasTitle << "Event " << event->GetContext().GetRun()
-                << "." << event->GetContext().GetEvent() << ":";
-
-    switch (plane) {
-    case 0: canvasTitle << " X"; break;
-    case 1: canvasTitle << " V"; break;
-    case 2: canvasTitle << " U"; break;
-    default: CaptError("Invalid canvas plane " << plane);
-    }
-
-    if (samplesInTime) {
-        canvasTitle << " Time vs Wire";
-    }
-    else {
-        canvasTitle << " Sample Number vs Wire";
-    }
-    canvas->SetTitle(canvasTitle.str().c_str());
-
-    canvas->cd();
-    
     digitPlot->SetMinimum(-maxVal);
     digitPlot->SetMaximum(maxVal+1);
     digitPlot->SetContour(100);
-    digitPlot->SetStats(false);
     digitPlot->Draw("colz");
-
+    
     ////////////////////////////////////////////////////////////
     // Now plot the PMT hit times on the histogram.
     ////////////////////////////////////////////////////////////
@@ -558,6 +569,7 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane, double timeUnit) {
         fCurrentGraphicsDelete->push_back(hitChargeLegend);
         hitChargeLegend->Draw();
 
+        double minTime =  gPad->GetUymin();
         for (CP::THitSelection::iterator h = hits->begin();
              h != hits->end(); ++h) {
             TGeometryId id = (*h)->GetGeomId();
@@ -570,7 +582,7 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane, double timeUnit) {
             double charge = (*h)->GetCharge();
             // The hit time.
             double hTime = (*h)->GetTime();
-            hTime = hTime + gPad->GetUymin()*timeUnit - wireTimeOffset;
+            hTime = hTime + minTime*timeUnit - wireTimeOffset;
             // The digitized hit time.
             double dTime = hTime/timeUnit;
             // The digitized hit start time.
