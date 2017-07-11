@@ -23,7 +23,21 @@ public:
 
 private:
 
-    void DrawTPCHits(int plane, double timeUnit);
+    // Draw the TPC hits onto a histogram that was created to draw the digits.
+    // The digit histogram will usually have a "time" axis in either samples,
+    // or microseconds.  The time unit provides the number of ns per unit on
+    // the digit histogram.  The time axis can also have an offset from zero.
+    // Time zero on the time axis is provided in timeOffset.  For raw digit
+    // samples, this is usually 3200, and for time, it is usually zero.
+    void DrawTPCHits(int plane, double timeUnit, double timeOffset);
+
+    // Draw the PMT hits onto a histogram that was created to draw the digits.
+    // The digit histogram will usually have a "time" axis in either samples,
+    // or microseconds.  The time unit provides the number of ns per unit on
+    // the digit histogram.  The time axis can also have an offset from zero.
+    // Time zero on the time axis is provided in timeOffset.  For raw digit
+    // samples, this is usually 3200, and for time, it is usually zero.
+    void DrawPMTHits(double timeUnit, double timeOffset);
     
     /// The time digitization step.
     double fDigitStep;
