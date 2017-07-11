@@ -123,6 +123,21 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         } 
     }
     
+    ///////////////////////////////////////////////////////////////////
+    // Delete any objects that were plotted on the canvas.
+    ///////////////////////////////////////////////////////////////////
+    switch(plane) {
+    case 0: fCurrentGraphicsDelete = &fGraphicsXDelete; break;
+    case 1: fCurrentGraphicsDelete = &fGraphicsVDelete; break;
+    case 2: fCurrentGraphicsDelete = &fGraphicsUDelete; break;
+    }
+    
+    for (std::vector<TObject*>::iterator g = fCurrentGraphicsDelete->begin();
+         g != fCurrentGraphicsDelete->end(); ++g) {
+        delete (*g);
+    }
+    fCurrentGraphicsDelete->clear();
+    
     //////////////////////////////////////////////////
     // Get the right canvas to update.
     //////////////////////////////////////////////////
@@ -144,42 +159,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         }
     }
 
-    // Update the canvas title.
-    std::ostringstream canvasTitle;
-    canvasTitle << "Event " << event->GetContext().GetRun()
-                << "." << event->GetContext().GetEvent() << ":";
-
-    switch (plane) {
-    case 0: canvasTitle << " X"; break;
-    case 1: canvasTitle << " V"; break;
-    case 2: canvasTitle << " U"; break;
-    default: CaptError("Invalid canvas plane " << plane);
-    }
-
-    if (samplesInTime) {
-        canvasTitle << " Time vs Wire";
-    }
-    else {
-        canvasTitle << " Sample Number vs Wire";
-    }
-    canvas->SetTitle(canvasTitle.str().c_str());
-
     canvas->cd();
-    
-    ///////////////////////////////////////////////////////////////////
-    // Delete any objects that were plotted on the canvas.
-    ///////////////////////////////////////////////////////////////////
-    switch(plane) {
-    case 0: fCurrentGraphicsDelete = &fGraphicsXDelete; break;
-    case 1: fCurrentGraphicsDelete = &fGraphicsVDelete; break;
-    case 2: fCurrentGraphicsDelete = &fGraphicsUDelete; break;
-    }
-    
-    for (std::vector<TObject*>::iterator g = fCurrentGraphicsDelete->begin();
-         g != fCurrentGraphicsDelete->end(); ++g) {
-        delete (*g);
-    }
-    fCurrentGraphicsDelete->clear();
     
     ///////////////////////////////////////////////////////////////////
     // Find the histogram range (in x and y).
@@ -297,8 +277,27 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
         samplesInTime = true;
     }
 
-    // Find the number of wires to be shown on the plot of digits and hits.
-    int wireCount = CP::TGeometryInfo::Get().GetWireCount(plane);
+    // Update the canvas title.
+    std::ostringstream canvasTitle;
+    canvasTitle << "Event " << event->GetContext().GetRun()
+                << "." << event->GetContext().GetEvent() << ":";
+
+    switch (plane) {
+    case 0: canvasTitle << " X"; break;
+    case 1: canvasTitle << " V"; break;
+    case 2: canvasTitle << " U"; break;
+    default: CaptError("Invalid canvas plane " << plane);
+    }
+
+    if (samplesInTime) {
+        canvasTitle << " Time vs Wire";
+    }
+    else {
+        canvasTitle << " Sample Number vs Wire";
+    }
+    canvas->SetTitle(canvasTitle.str().c_str());
+
+    // Update the histogram title.
     std::ostringstream histTitle;
     histTitle << "Event " << event->GetContext().GetRun()
               << "." << event->GetContext().GetEvent() << ":";
@@ -323,6 +322,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     // Create the histgram to fill (and delete the old one if needed).
     ////////////////////////////////////////////////////////////////
     TH2F* digitPlot = NULL;
+    int wireCount = CP::TGeometryInfo::Get().GetWireCount(plane);
     switch (plane) {
     case 0:
         if (fXPlaneHist) delete fXPlaneHist;
