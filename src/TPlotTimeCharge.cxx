@@ -81,7 +81,6 @@ namespace {
             // Add a penalty for wanting a large constant term.
             f += u[2]*u[2]/2000.0/2000.0;
         }
-        std::cout << "Fitted Function " << f << std::endl;
         f1->SetNumberFitPoints(npfits);
     }
 }
