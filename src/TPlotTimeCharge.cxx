@@ -78,7 +78,10 @@ namespace {
             eu = ey*ey;
             if (eu <= 0) eu = 1;
             f += 1.0 - exp(-0.5*fsum*fsum/eu);
+            // Add a penalty for wanting a large constant term.
+            f += u[2]*u[2]/2000.0/2000.0;
         }
+        std::cout << "Fitted Function " << f << std::endl;
         f1->SetNumberFitPoints(npfits);
     }
 }
@@ -148,12 +151,13 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
 
     if (fElectronLifeFunction) delete fElectronLifeFunction;
     std::ostringstream functionString;
-    functionString << "[1]*exp(-(x-" << timeZero << ")/[0])";
+    functionString << "[2]+[1]*exp(-(x-" << timeZero << ")/[0])";
         
     fElectronLifeFunction = new TF1("electronLifeFunction",
                                     functionString.str().c_str());
     fElectronLifeFunction->SetParName(0,"Electron Lifetime");
     fElectronLifeFunction->SetParName(1,"Normalization");
+    fElectronLifeFunction->SetParName(2,"Baseline");
     fElectronLifeFunction->SetRange(xMin+(xMax-xMin)/20.0,
                                     xMax-(xMax-xMin)/20.0);
 
@@ -174,7 +178,8 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
     double bestValue = 1E+30;
     double bestLife = 0.0;
     double bestNorm = 0.0;
-
+    double bestBase = 0.0;
+    
     double chargeStep = std::log(maxCharge/minCharge)/100.0;
     for (double logCharge = std::log(minCharge);
          logCharge < std::log(maxCharge);
@@ -197,7 +202,7 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
         }
     }
 
-    fElectronLifeFunction->SetParameters(bestLife, bestNorm);
+    fElectronLifeFunction->SetParameters(bestLife, bestNorm, bestBase);
     TFitResultPtr result = graph->Fit(fElectronLifeFunction,"su","",
                                       xMin,
                                       xMax);
@@ -216,6 +221,10 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
               << unit::AsString(result->Parameter(1),
                                 result->Error(1), "electrons")
               << " @ " << unit::AsString(unit::microsecond*timeZero,"time");
+    std::ostringstream baseLabel;
+    baseLabel << "Baseline: "
+              << unit::AsString(result->Parameter(2),
+                                result->Error(2), "electrons");
     bool foundLifeLabel = false;
     TIter entries(fGraphLegend->GetListOfPrimitives());
     while (TObject *o = entries()) {
@@ -228,10 +237,14 @@ void CP::TPlotTimeCharge::FitTimeCharge() {
         if (label.find("Norm:") != std::string::npos) {
             entry->SetLabel(normLabel.str().c_str());
         }
+        if (label.find("Baseline:") != std::string::npos) {
+            entry->SetLabel(baseLabel.str().c_str());
+        }
     }
     if (!foundLifeLabel) {
         fGraphLegend->AddEntry((TObject*)NULL,lifeLabel.str().c_str(),"");
         fGraphLegend->AddEntry((TObject*)NULL,normLabel.str().c_str(),"");
+        fGraphLegend->AddEntry((TObject*)NULL,baseLabel.str().c_str(),"");
     }
                             
     gPad->Update();
@@ -405,6 +418,7 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
         chargeUnc[points] = (*h)->GetChargeUncertainty();
+        chargeUnc[points] += 0.4*charge[points];
         ++points;
         minTime = std::min((*h)->GetTime(),minTime);
         maxTime = std::max((*h)->GetTime(),maxTime);

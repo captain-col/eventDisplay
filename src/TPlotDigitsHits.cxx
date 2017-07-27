@@ -269,7 +269,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
                 wireTimeStep = chanCalib.GetTimeConstant(cid,1);
             }
         }
-        signalBins = 1000;
+        signalBins = 10000;
         digitSampleStep = 0.5;
         digitSampleOffset = 0.0;
         signalStart /= unit::microsecond;
