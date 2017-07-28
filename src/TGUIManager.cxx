@@ -227,14 +227,32 @@ void CP::TGUIManager::MakeControlTab() {
     textButton->SetToolTipText("Draw the U digits vs wire number."
                                "  Also show the U hits.");
 
-    checkButton = new TGCheckButton(hf,"Show raw digits");
+    checkButton = new TGCheckButton(hf,"Show calibrated digits");
     checkButton->SetToolTipText(
-        "Show the raw, not calibrated digits.");
+        "show calibrated, not raw digits.");
     checkButton->SetTextJustify(36);
     checkButton->SetMargins(0,0,0,0);
     checkButton->SetWrapLength(-1);
     hf->AddFrame(checkButton, layoutHints);
-    fShowRawDigitsButton = checkButton;
+    fShowCalibDigitsButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show decorrelated digits");
+    checkButton->SetToolTipText(
+        "show decorrelated, not raw digits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowDecorrelDigitsButton = checkButton;
+
+    checkButton = new TGCheckButton(hf,"Show deconvolved digits");
+    checkButton->SetToolTipText(
+        "show deconvolved, not raw digits.");
+    checkButton->SetTextJustify(36);
+    checkButton->SetMargins(0,0,0,0);
+    checkButton->SetWrapLength(-1);
+    hf->AddFrame(checkButton, layoutHints);
+    fShowDeconvDigitsButton = checkButton;
 
     checkButton = new TGCheckButton(hf,"Show all samples (slow)");
     checkButton->SetToolTipText(

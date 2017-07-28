@@ -99,8 +99,14 @@ public:
     TGButton* GetDrawUDigitsButton() {return fDrawUDigitsButton;}
 
     /// Get the button to select if raw or calibrated digits should be drawn.
-    TGButton* GetShowRawDigitsButton() {return fShowRawDigitsButton;}
+    TGButton* GetShowDeconvDigitsButton() {return fShowDeconvDigitsButton;}
 
+    /// Get the button to select if raw or calibrated digits should be drawn.
+    TGButton* GetShowDecorrelDigitsButton() {return fShowDecorrelDigitsButton;}
+
+    /// Get the button to select if raw or calibrated digits should be drawn.
+    TGButton* GetShowCalibDigitsButton() {return fShowCalibDigitsButton;}
+    
     /// Get the button to select if all digit samples are drawn.
     TGButton* GetShowFullDigitsButton() {return fShowFullDigitsButton;}
 
@@ -146,7 +152,9 @@ private:
     TGButton* fDrawUDigitsButton;
     TGButton* fDrawVDigitsButton;
     TGButton* fDrawXDigitsButton;
-    TGButton* fShowRawDigitsButton;
+    TGButton* fShowCalibDigitsButton;
+    TGButton* fShowDecorrelDigitsButton;
+    TGButton* fShowDeconvDigitsButton;
     TGButton* fShowFullDigitsButton;
     TGButton* fShowDigitSamplesButton;
 

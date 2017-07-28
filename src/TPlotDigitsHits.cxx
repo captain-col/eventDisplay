@@ -112,11 +112,31 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
     // Check if the user wanted to see deconvolved digits.  Raw digits are
     // used if the deconvonvolved digits aren't found.
     bool samplesInTime = false;
-    if (!CP::TEventDisplay::Get().GUI().GetShowRawDigitsButton()->IsOn()
+    if (CP::TEventDisplay::Get().GUI().GetShowDeconvDigitsButton()->IsOn()
         or !drift) {
         CP::THandle<CP::TDigitContainer> tmp
             = event->Get<CP::TDigitContainer>("~/digits/drift-deconv");
         // If deconvolved digits are found, then use them.
+        if (tmp) {
+            samplesInTime = true;
+            drift = tmp;
+        } 
+    }
+    if (CP::TEventDisplay::Get().GUI().GetShowDecorrelDigitsButton()->IsOn()
+        or !drift) {
+        CP::THandle<CP::TDigitContainer> tmp
+            = event->Get<CP::TDigitContainer>("~/digits/drift-correl");
+        // If decorrelated digits are found, then use them.
+        if (tmp) {
+            samplesInTime = true;
+            drift = tmp;
+        } 
+    }
+    if (CP::TEventDisplay::Get().GUI().GetShowCalibDigitsButton()->IsOn()
+        or !drift) {
+        CP::THandle<CP::TDigitContainer> tmp
+            = event->Get<CP::TDigitContainer>("~/digits/drift-calib");
+        // If calib digits are found, then use them.
         if (tmp) {
             samplesInTime = true;
             drift = tmp;
