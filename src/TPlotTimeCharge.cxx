@@ -417,7 +417,6 @@ void CP::TPlotTimeCharge::DrawTimeCharge() {
         timeRMS[points] = (*h)->GetTimeRMS()/unit::microsecond;
         charge[points] = (*h)->GetCharge();
         chargeUnc[points] = (*h)->GetChargeUncertainty();
-        chargeUnc[points] += 0.4*charge[points];
         ++points;
         minTime = std::min((*h)->GetTime(),minTime);
         maxTime = std::max((*h)->GetTime(),maxTime);
