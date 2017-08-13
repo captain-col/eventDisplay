@@ -33,8 +33,6 @@ CP::TPlotHitSamples::~TPlotHitSamples() {
 }
 
 void CP::TPlotHitSamples::DrawHitSamples() {
-    std::cout << "Draw Hit Samples" << std::endl;
-    
     CP::TEvent* event = CP::TEventFolder::GetCurrentEvent();
 
     CP::THandle<CP::THitSelection> hits
@@ -48,17 +46,14 @@ void CP::TPlotHitSamples::DrawHitSamples() {
     TCanvas* canvasDigits = NULL;
     int dType = -1;
     if (!canvasDigits) {
-        std::cout << "Draw X hit" << std::endl;
         canvasDigits = (TCanvas*) gROOT->FindObject("canvasXDigits");
         dType = 0;
     }
     if (!canvasDigits) {
-        std::cout << "Draw V hit" << std::endl;
         canvasDigits = (TCanvas*) gROOT->FindObject("canvasVDigits");
         dType = 1;
     }
     if (!canvasDigits) {
-        std::cout << "Draw U hit" << std::endl;
         canvasDigits = (TCanvas*) gROOT->FindObject("canvasUDigits");
         dType = 2;
     }
@@ -93,10 +88,6 @@ void CP::TPlotHitSamples::DrawHitSamples() {
     minDigitTime *= unit::microsecond;
     maxDigitTime *= unit::microsecond;
     
-    std::cout << "Hit between " << minDigitTime
-              << " " << maxDigitTime << std::endl;
-    std::cout << "    " << minWireNumber << " " << maxWireNumber << std::endl;
-
     // Find the hit to draw.
     CP::THandle<THit> hit;
     for (CP::THitSelection::iterator h = hits->begin();
@@ -125,9 +116,6 @@ void CP::TPlotHitSamples::DrawHitSamples() {
     }
 
     int wireNumber = CP::GeomId::Captain::GetWireNumber(hit->GetGeomId());
-    std::cout << "Draw Hit on wire " << wireNumber << std::endl;
-    hit->ls();
-    
     TCanvas* canvas = NULL;
     canvas = (TCanvas*) gROOT->FindObject("canvasHitSamples");
     if (!canvas) {
@@ -150,15 +138,17 @@ void CP::TPlotHitSamples::DrawHitSamples() {
     }
 
     titleStream << wireNumber << "]"
-                << " @ " << unit::AsString(hit->GetTime(),
+                << " @ (" << unit::AsString(hit->GetTime(),
                                            hit->GetTimeUncertainty(),"time")
-                << " (rms: " << unit::AsString(hit->GetTimeRMS(),"time") << ")"
-                << " w/ " << unit::AsString(hit->GetCharge(),
+                << ")" 
+                << " rms: " << unit::AsString(hit->GetTimeRMS(),"time") 
+                << " Q: (" << unit::AsString(hit->GetCharge(),
                                             hit->GetChargeUncertainty(),
-                                            "charge");
-    
-    std::cout << titleStream.str() << std::endl;
+                                            "electrons")
+                << ")";
 
+    std::cout << titleStream.str() << std::endl;
+    
     for (std::vector<TObject*>::iterator g = fGraphicsDelete.begin();
          g != fGraphicsDelete.end(); ++g) {
         delete (*g);
@@ -173,7 +163,12 @@ void CP::TPlotHitSamples::DrawHitSamples() {
     int points;
     double startTime = hit->GetTimeStart();
     double stopTime = hit->GetTimeStop();
-    double dTime = (stopTime - startTime)/hit->GetTimeSamples();
+    double dTime = (stopTime - startTime);
+    if (hit->GetTimeSamples()>1) dTime /= hit->GetTimeSamples();
+    double chargeY = hit->GetTimeUpperBound() - hit->GetTimeLowerBound();
+    chargeY = dTime*hit->GetCharge()/chargeY;
+    double chargeUncY = hit->GetTimeUpperBound() - hit->GetTimeLowerBound();
+    chargeUncY= dTime*hit->GetChargeUncertainty()/chargeUncY;
     double minCharge = 1E+22;
     double maxCharge = -1E+22;
     for (int i=0; i<hit->GetTimeSamples(); ++i) {
@@ -182,18 +177,15 @@ void CP::TPlotHitSamples::DrawHitSamples() {
         minCharge = std::min(hit->GetTimeSample(i), minCharge);
         maxCharge = std::max(hit->GetTimeSample(i), maxCharge);
     }
+    double drawMin = minCharge;
     if (maxCharge > 0.0 && minCharge < 0.0) minCharge = 0.0;
-    
-    double chargeY = hit->GetTimeUpperBound() - hit->GetTimeLowerBound();
-    chargeY = dTime*hit->GetCharge()/chargeY;
-    double chargeUncY = hit->GetTimeUpperBound() - hit->GetTimeLowerBound();
-    chargeUncY= dTime*hit->GetChargeUncertainty()/chargeUncY;
+    drawMin = std::min(drawMin, minCharge - chargeY - 2*chargeUncY);
 
     TGraph* hitGraph =  new TGraph(points,time,charge);
     fGraphicsDelete.push_back(hitGraph);
     hitGraph->SetName("GraphHitSamples");
     hitGraph->SetTitle(titleStream.str().c_str());
-    hitGraph->SetMinimum(minCharge - chargeY - 2*chargeUncY);
+    hitGraph->SetMinimum(drawMin);
     hitGraph->Draw("AC*");
 
     {
@@ -217,14 +209,12 @@ void CP::TPlotHitSamples::DrawHitSamples() {
                              hit->GetTimeUpperBound(),
                              minCharge-chargeY);
         fGraphicsDelete.push_back(box);
-        box->SetLineStyle(1);
+        box->SetFillStyle(3345);
         box->SetFillColor(kRed);
+        box->SetLineStyle(1);
+        box->SetLineWidth(2);
+        box->SetLineColor(kRed);
         box->Draw();
-        std::cout << hit->GetTimeLowerBound()
-                  << " " << hit->GetTimeUpperBound()
-                  << " " << hit->GetCharge()
-                  << " " << chargeY
-                  << std::endl;
     }
     
     {
@@ -233,16 +223,12 @@ void CP::TPlotHitSamples::DrawHitSamples() {
                              hit->GetTimeUpperBound(),
                              minCharge-chargeUncY);
         fGraphicsDelete.push_back(box);
+        box->SetFillStyle(3254);
+        box->SetFillColor(kBlue);
         box->SetLineStyle(1);
-        box->SetLineWidth(1);
+        box->SetLineWidth(2);
         box->SetLineColor(kBlue);
-        box->SetFillStyle(0);
         box->Draw();
-        std::cout << hit->GetTimeLowerBound()
-                  << " " << hit->GetTimeUpperBound()
-                  << " " << hit->GetCharge()
-                  << " " << chargeY
-                  << std::endl;
     }
     
     {
