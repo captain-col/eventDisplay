@@ -152,6 +152,17 @@ void CP::TGUIManager::MakeControlTab() {
     fRecalculateViewButton = checkButton;
 
     /////////////////////
+    // Button to draw the first hit zoomed in the digit plot.
+    /////////////////////
+    textButton = new TGTextButton(hf, "Draw Hit");
+    fDrawHitButton = textButton;
+    textButton->SetTextJustify(36);
+    textButton->SetMargins(0,0,0,0);
+    textButton->SetWrapLength(-1);
+    hf->AddFrame(textButton, layoutHints);
+    textButton->SetToolTipText("Draw the samples and values for a hit.");
+    
+    /////////////////////
     // Button to draw the hit times and charges.
     /////////////////////
     textButton = new TGTextButton(hf, "Times and Charges");

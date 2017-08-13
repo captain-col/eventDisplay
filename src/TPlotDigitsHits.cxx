@@ -555,57 +555,57 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
 
         TLegend* hitChargeLegend = new TLegend(0.85,0.70,0.97,0.97);
         std::ostringstream label;
-        label << unit::AsString(0.0,"charge")
+        label << unit::AsString(0.0,"electrons")
               << " - "
-              << unit::AsString(4000.0,"charge");
+              << unit::AsString(4000.0,"electrons");
         hitChargeLegend->AddEntry(box1,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(4000.0,"charge")
+        label << unit::AsString(4000.0,"electrons")
               << " - "
-              << unit::AsString(6000.0,"charge");
+              << unit::AsString(6000.0,"electrons");
         hitChargeLegend->AddEntry(box2,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(6000.0,"charge")
+        label << unit::AsString(6000.0,"electrons")
               << " - "
-              << unit::AsString(8000.0,"charge");
+              << unit::AsString(8000.0,"electrons");
         hitChargeLegend->AddEntry(box3,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(8000.0,"charge")
+        label << unit::AsString(8000.0,"electrons")
               << " - "
-              << unit::AsString(10000.0,"charge");
+              << unit::AsString(10000.0,"electrons");
         hitChargeLegend->AddEntry(box4,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(10000.0,"charge")
+        label << unit::AsString(10000.0,"electrons")
               << " - "
-              << unit::AsString(13000.0,"charge");
+              << unit::AsString(13000.0,"electrons");
         hitChargeLegend->AddEntry(box5,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(13000.0,"charge")
+        label << unit::AsString(13000.0,"electrons")
               << " - "
-              << unit::AsString(16000.0,"charge");
+              << unit::AsString(16000.0,"electrons");
         hitChargeLegend->AddEntry(box6,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(16000.0,"charge")
+        label << unit::AsString(16000.0,"electrons")
               << " - "
-              << unit::AsString(20000.0,"charge");
+              << unit::AsString(20000.0,"electrons");
         hitChargeLegend->AddEntry(box7,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(20000.0,"charge")
+        label << unit::AsString(20000.0,"electrons")
               << " - "
-              << unit::AsString(25000.0,"charge");
+              << unit::AsString(25000.0,"electrons");
         hitChargeLegend->AddEntry(box8,label.str().c_str(),"f");
         label.str("");;
         
-        label << unit::AsString(25000.0,"charge")
+        label << unit::AsString(25000.0,"electrons")
               << " - "
-              << unit::AsString(32000.0,"charge");
+              << unit::AsString(32000.0,"electrons");
         hitChargeLegend->AddEntry(box9,label.str().c_str(),"f");
         label.str("");;
         
@@ -630,10 +630,18 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
             double dStartTime = ((*h)->GetTimeStart()-(*h)->GetTime());
             dStartTime /= timeUnit;
             dStartTime += dTime;
-            // The digitized hit start time.
+            // The digitized hit stop time.
             double dStopTime = ((*h)->GetTimeStop()-(*h)->GetTime());
             dStopTime /= timeUnit;
             dStopTime += dTime;
+            // The digitized hit lower bound time.
+            double dLowerTime = ((*h)->GetTimeLowerBound()-(*h)->GetTime());
+            dLowerTime /= timeUnit;
+            dLowerTime += dTime;
+            // The digitized hit upper bound time.
+            double dUpperTime = ((*h)->GetTimeUpperBound()-(*h)->GetTime());
+            dUpperTime /= timeUnit;
+            dUpperTime += dTime;
             // The hit RMS.
             double rms = (*h)->GetTimeRMS();
             // The digitized RMS
@@ -686,7 +694,7 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
                 fCurrentGraphicsDelete->push_back(pline);
             }
             
-            if (dStartTime < dTime && dTime < dStopTime) {
+            if (dStartTime < dLowerTime && dUpperTime < dStopTime) {
                 int n=0;
                 double px[10];
                 double py[10];
@@ -694,6 +702,22 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
                 py[n++] = dStartTime;
                 px[n] = wire;
                 py[n++] = dStopTime;
+                TPolyLine* pline = new TPolyLine(n,px,py);
+                pline->SetLineWidth(1);
+                pline->SetLineStyle(3);
+                pline->SetLineColor(1);
+                pline->Draw();
+                fCurrentGraphicsDelete->push_back(pline);
+            }
+
+            if (dLowerTime < dTime && dTime < dUpperTime) {
+                int n=0;
+                double px[10];
+                double py[10];
+                px[n] = wire;
+                py[n++] = dLowerTime;
+                px[n] = wire;
+                py[n++] = dUpperTime;
                 TPolyLine* pline = new TPolyLine(n,px,py);
                 pline->SetLineWidth(1);
                 pline->SetLineStyle(3);

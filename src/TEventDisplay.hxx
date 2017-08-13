@@ -5,6 +5,7 @@ namespace CP {
     class TEventDisplay;
     class TGUIManager;
     class TEventChangeManager;
+    class TPlotHitSamples;
     class TPlotDigitsHits;
     class TPlotTimeCharge;
 };
@@ -51,6 +52,9 @@ private:
     // The event change manager.
     TEventChangeManager* fEventChangeManager;
 
+    // The hit drawing class.  This is connected directly to the button.
+    TPlotHitSamples* fPlotHitSamples;
+    
     // The digit drawing class.  This is connected directly to the buttons.
     TPlotDigitsHits* fPlotDigitsHits;
 

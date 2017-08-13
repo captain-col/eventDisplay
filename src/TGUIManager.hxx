@@ -9,7 +9,6 @@ namespace CP {
     class TGUIManager;
 }
 
-
 /// This creates the GUI interface for the event display, and then provides
 /// handles so that other functions can connect to the interface.  A pointer
 /// to each interface widget can be accessed by a method named by it's
@@ -98,6 +97,9 @@ public:
     /// Get the button to draw the U plane digits.
     TGButton* GetDrawUDigitsButton() {return fDrawUDigitsButton;}
 
+    // Get the button to draw the THit object.
+    TGButton* GetDrawHitButton()  {return fDrawHitButton;}
+
     /// Get the button to select if raw or calibrated digits should be drawn.
     TGButton* GetShowDeconvDigitsButton() {return fShowDeconvDigitsButton;}
 
@@ -144,6 +146,7 @@ private:
     TGButton* fShowTrajectoriesButton;
     TGButton* fShowG4HitsButton;
     TGButton* fRecalculateViewButton;
+    TGButton* fDrawHitButton;
     TGButton* fDrawTimeChargeButton;
     TGButton* fFitTimeChargeButton;
     TGButton* fShowXTimeChargeButton;
