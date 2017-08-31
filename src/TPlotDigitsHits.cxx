@@ -694,6 +694,7 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
                 fCurrentGraphicsDelete->push_back(pline);
             }
             
+#ifdef PLOT_SAVED_SAMPLES
             if (dStartTime < dLowerTime && dUpperTime < dStopTime) {
                 int n=0;
                 double px[10];
@@ -709,6 +710,7 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
                 pline->Draw();
                 fCurrentGraphicsDelete->push_back(pline);
             }
+#endif
 
             if (dLowerTime < dTime && dTime < dUpperTime) {
                 int n=0;
