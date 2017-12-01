@@ -30,6 +30,10 @@ public:
     /// the GUI buttons.
     void ChangeEvent(int change=1);
 
+    /// Field to select a specific event. Selected event number is read 
+    /// when the return key is pressed.
+    void SelectEvent();
+
     /// Add a handler (taking ownership of the handler) for when the event
     /// changes (e.g. a new event is read).  These handlers are for
     /// "once-per-event" actions and are executed by the NewEvent() method.
