@@ -4,6 +4,7 @@
 #include <TGButton.h>
 #include <TGListBox.h>
 #include <TGTextEntry.h>
+#include <TGNumberEntry.h>
 
 namespace CP {
     class TGUIManager;
@@ -40,6 +41,9 @@ public:
 
     /// Get the previous event button widget.
     TGButton* GetPrevEventButton() {return fPrevEventButton;}
+
+    // Get specific event
+    TGNumberEntry* GetEventField() {return fInputEvent;}
 
     /// Get the check button selecting if reconstruction objects are shown.
     TGButton* GetShowFitsButton() {return fShowFitsButton;}
@@ -160,6 +164,7 @@ private:
     TGButton* fShowDeconvDigitsButton;
     TGButton* fShowFullDigitsButton;
     TGButton* fShowDigitSamplesButton;
+    TGNumberEntry* fInputEvent;
 
     /// Make a tab in the browser to select algorithms shown.
     void MakeResultsTab();

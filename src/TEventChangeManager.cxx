@@ -114,6 +114,14 @@ CP::TEventChangeManager::TEventChangeManager() {
                         "ChangeEvent(=-1)");
     }
 
+    TGNumberEntry* field = CP::TEventDisplay::Get().GUI().GetEventField();
+    if (field) {
+	(field->GetNumberEntry())->Connect("ReturnPressed()",
+					   "CP::TEventChangeManager",
+					   this,
+					   "SelectEvent()");
+    }
+
     // Register a geometry change manager to handle when a new geometry
     // becomes available
     CP::TManager::Get().RegisterGeometryCallback(new GeometryChangeCallback);
@@ -170,6 +178,40 @@ void CP::TEventChangeManager::ChangeEvent(int change) {
     }
 
     if (change != 0) NewEvent(); 
+
+    UpdateEvent();
+}
+
+void CP::TEventChangeManager::SelectEvent() {
+    int change = 0;
+    TGNumberEntry* field = CP::TEventDisplay::Get().GUI().GetEventField();
+    if (field) {
+	change = field->GetNumberEntry()->GetIntNumber();
+    }
+
+    CaptError("Select Event " << change);
+    if (!GetEventSource()) {
+	CaptError("Event source is not available");
+	UpdateEvent();
+	return;
+    }
+
+    CP::TEvent* currentEvent = CP::TEventFolder::GetCurrentEvent();
+    CP::TEvent* nextEvent = NULL;
+
+    if (change > 0) {
+	nextEvent = GetEventSource()->FirstEvent();
+	nextEvent = GetEventSource()->NextEvent(change-2);
+	if (!nextEvent) nextEvent = GetEventSource()->PreviousEvent();
+	if (nextEvent && currentEvent) delete currentEvent;
+    }
+    currentEvent = CP::TEventFolder::GetCurrentEvent();
+    if (!currentEvent) {
+	CaptLog("No Current Event");
+	return;
+    }
+
+    if (change != 0) NewEvent();
 
     UpdateEvent();
 }

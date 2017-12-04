@@ -6,6 +6,7 @@
 #include <TGListBox.h>
 #include <TGLabel.h>
 #include <TGTextEntry.h>
+#include <TGNumberEntry.h>
 
 #include <TEveManager.h>
 #include <TEveBrowser.h>
@@ -59,6 +60,17 @@ void CP::TGUIManager::MakeControlTab() {
     textButton->SetWrapLength(-1);
     hf->AddFrame(textButton, layoutHints);
     fNextEventButton = textButton;
+
+    TGGroupFrame *fGframe = new TGGroupFrame(hf, "Event Number");
+    TGNumberEntry * inputEvent = new TGNumberEntry(fGframe, 0, 9,999,
+                                                  TGNumberFormat::kNESInteger,
+                                                  TGNumberFormat::kNEANonNegative,
+                                                  TGNumberFormat::kNELLimitMinMax,
+                                                  0, 99999);
+    fGframe->AddFrame(inputEvent,layoutHints);
+    //hf->AddFrame(inputEvent, layoutHints);
+    hf->AddFrame(fGframe, layoutHints);
+    fInputEvent = inputEvent;
 
     // Create the buttons to select which types of objects are showed.
     TGCheckButton *checkButton;
