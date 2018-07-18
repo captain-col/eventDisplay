@@ -217,6 +217,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             CP::TGeometryId id 
                 = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
             if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            if (!chanCalib.IsGoodWire(id)) continue;
             // Save the sample to find the median.
             for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
                 double s = GetDigitSample(*d,i);
@@ -261,6 +262,7 @@ void CP::TPlotDigitsHits::DrawDigits(int plane) {
             CP::TGeometryId id 
                 = CP::TChannelInfo::Get().GetGeometry(digit->GetChannelId());
             if (CP::GeomId::Captain::GetWirePlane(id) != plane) continue;
+            if (!chanCalib.IsGoodWire(id)) continue;
             double maxSignal = 0.0;
             for (std::size_t i = 0; i < GetDigitSampleCount(*d); ++i) {
                 double s = std::abs(GetDigitSample(*d,i) - medianSample);
@@ -679,6 +681,11 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
                 color = box0->GetFillColor();
             }
 
+            int centerColor = color;
+            if (!(*h)->HasValidTime() || !(*h)->HasValidCharge()) {
+                centerColor = kGray;
+            }
+
             {
                 int n=0;
                 double px[10];
@@ -738,7 +745,7 @@ void CP::TPlotDigitsHits::DrawTPCHits(int plane,
                 py[n++] = dTime+dRMS;
                 TPolyLine* pline = new TPolyLine(n,px,py);
                 pline->SetLineWidth(3);
-                pline->SetLineColor(color);
+                pline->SetLineColor(centerColor);
                 pline->Draw();
                 fCurrentGraphicsDelete->push_back(pline);
             }
